@@ -1,30 +1,24 @@
-use secp256k1::rand::rngs::OsRng;
-use secp256k1::{PublicKey, Secp256k1};
-use tiny_keccak::{Hasher, Keccak};
+mod address;
+
+use std::thread;
+use address::PrivateKeyAccount;
+use num_cpus;
 
 fn main() {
-    miner_address();
-}
+    let num_threads = num_cpus::get();
+    let mut handles = vec![];
 
-fn miner_address() {
-    let secp = Secp256k1::new();
-    let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
+    for _ in 0..num_threads {
+        let handle = thread::spawn(move || {
+            let private_key_account = PrivateKeyAccount::from_random_private_key();
 
-    let address = public_key_to_address(&public_key);
-    println!("address: {}", address);
-    println!("secret_key: {}", secret_key.display_secret());
-}
+            let _ = private_key_account.address.display_hex_address();
+        });
 
-fn public_key_to_address(public_key: &PublicKey) -> String {
-    let public_key = public_key.serialize_uncompressed();
+        handles.push(handle);
+    }
 
-    let public_key = &public_key[1..];
-
-    let mut hasher = Keccak::v256();
-    hasher.update(public_key);
-    let mut output = [0u8; 32];
-    hasher.finalize(&mut output);
-    let address = hex::encode(&output[12..]);
-
-    format!("0x{}", address)
+    for handle in handles {
+        handle.join().unwrap();
+    }
 }
