@@ -7,8 +7,8 @@ pub struct Address {
 }
 
 pub struct PrivateKeyAccount {
-    secret_key: SecretKey,
-    public_key: PublicKey,
+    pub secret_key: SecretKey,
+    pub public_key: PublicKey,
     pub address: Address,
 }
 
@@ -41,5 +41,9 @@ impl Address {
     }
     pub fn display_hex_address(&self) -> String {
         format!("0x{}", hex::encode(&self.address))
+    }
+
+    pub fn hex_address(&self) -> String {
+        hex::encode(&self.address)
     }
 }

@@ -12,3 +12,4 @@ tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 hex = "0.4"
 num_cpus = "1.0"
 clap = { version = "4.5.23", features = ["derive"] }
+regex = "1.11.1"
