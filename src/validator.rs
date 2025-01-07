@@ -1,10 +1,5 @@
 use crate::args;
 
-#[derive(Debug, Clone)]
-pub struct FoundAddress {
-    pub address: String,
-}
-
 pub struct AddressValidator {
     contains: Option<Vec<String>>,
     prefix: Option<String>,
@@ -47,11 +42,97 @@ impl AddressValidator {
         }
 
         if let Some(contains) = &self.contains {
-            if contains.iter().any(|c| !address.contains(c)) {
+            if !contains.iter().any(|c| !address.contains(c)) {
                 return false;
             }
         }
 
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use args::Args;
+
+    #[test]
+    fn test_contains_validate() {
+        let validator = AddressValidator::new(&Args {
+            max: None,
+            limit: None,
+            threads: None,
+            contains: Some(vec![
+                "123".to_string(),
+                "111".to_string(),
+                "999999999".to_string(),
+            ]),
+            prefix: None,
+            suffix: None,
+            regex: None,
+        });
+
+        assert!(validator.validate("1230000000000000000000000000000000000000"));
+        assert!(validator.validate("0001230000000000000000000000000000000000"));
+        assert!(validator.validate("0000000000000000000000000000000000000123"));
+        assert!(validator.validate("1110000000000000000000000000000000000000"));
+        assert!(validator.validate("9999999990000000000000000000000000000000"));
+    }
+
+    #[test]
+    fn test_prefix_validate() {
+        let validator = AddressValidator::new(&Args {
+            max: None,
+            limit: None,
+            threads: None,
+            contains: None,
+            prefix: Some("123".to_string()),
+            suffix: None,
+            regex: None,
+        });
+
+        assert!(validator.validate("1230000000000000000000000000000000000000"));
+        assert_eq!(
+            validator.validate("0001230000000000000000000000000000000000"),
+            false
+        );
+    }
+
+    #[test]
+    fn test_suffix_validate() {
+        let validator = AddressValidator::new(&Args {
+            max: None,
+            limit: None,
+            threads: None,
+            contains: None,
+            prefix: None,
+            suffix: Some("123".to_string()),
+            regex: None,
+        });
+
+        assert!(validator.validate("0000000000000000000000000000000000000123"));
+        assert_eq!(
+            validator.validate("9999999990000000000000000000000000000000"),
+            false
+        );
+    }
+
+    #[test]
+    fn test_regex_validate() {
+        let validator = AddressValidator::new(&Args {
+            max: None,
+            limit: None,
+            threads: None,
+            contains: None,
+            prefix: None,
+            suffix: None,
+            regex: Some("0{10}".to_string()),
+        });
+
+        assert!(validator.validate("0000000000111111111111111111111111111111"));
+        assert_eq!(
+            validator.validate("1110000000111111111111111111111111111111"),
+            false
+        );
     }
 }

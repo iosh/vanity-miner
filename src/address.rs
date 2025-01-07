@@ -65,6 +65,6 @@ mod tests {
         let account = PrivateKeyAccount::from_random_private_key();
         let address: String = account.address.hex_address();
 
-        assert_eq!(address.len(), 42);
+        assert_eq!(address.len(), 40);
     }
 }

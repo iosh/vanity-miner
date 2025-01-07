@@ -20,7 +20,7 @@ fn main() {
     let args = args::Args::parse();
     let num_threads = args.threads.unwrap_or(num_cpus::get());
     let mut handles = vec![];
-
+    
     let max = args.max.unwrap_or(0);
     let limit = args.limit.unwrap_or(0);
     let validator = Arc::new(validator::AddressValidator::new(&args));
