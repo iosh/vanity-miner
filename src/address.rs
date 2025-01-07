@@ -1,9 +1,15 @@
+use std::fmt::Display;
+
 use secp256k1::rand::rngs::OsRng;
 use secp256k1::{PublicKey, Secp256k1, SecretKey};
 use tiny_keccak::{Hasher, Keccak};
 
+pub type EthereumAddress = [u8; 20];
+
+pub type Keccak256Hash = [u8; 32];
+
 pub struct Address {
-    address: [u8; 20],
+    address: EthereumAddress,
 }
 
 pub struct PrivateKeyAccount {
@@ -34,16 +40,31 @@ impl Address {
         let mut output = [0u8; 32];
         hasher.finalize(&mut output);
 
-        let mut address = [0u8; 20];
-        address.copy_from_slice(&output[12..]);
+        let address = <EthereumAddress>::try_from(&output[12..]).unwrap();
 
         Address { address }
-    }
-    pub fn display_hex_address(&self) -> String {
-        format!("0x{}", hex::encode(&self.address))
     }
 
     pub fn hex_address(&self) -> String {
         hex::encode(&self.address)
+    }
+}
+
+impl Display for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.address))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_random_private_key_address() {
+        let account = PrivateKeyAccount::from_random_private_key();
+        let address: String = account.address.hex_address();
+
+        assert_eq!(address.len(), 42);
     }
 }
