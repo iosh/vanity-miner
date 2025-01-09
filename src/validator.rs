@@ -1,4 +1,4 @@
-use crate::args;
+use crate::cli;
 
 pub struct AddressValidator {
     contains: Option<Vec<String>>,
@@ -8,7 +8,7 @@ pub struct AddressValidator {
 }
 
 impl AddressValidator {
-    pub fn new(args: &args::Args) -> AddressValidator {
+    pub fn new(args: &cli::Args) -> AddressValidator {
         let r = args
             .regex
             .as_ref()
@@ -54,7 +54,7 @@ impl AddressValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use args::Args;
+    use cli::Args;
 
     #[test]
     fn test_contains_validate() {

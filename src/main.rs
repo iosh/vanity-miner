@@ -1,5 +1,5 @@
 mod address;
-mod args;
+mod cli;
 mod validator;
 use address::PrivateKeyAccount;
 
@@ -17,7 +17,7 @@ use std::{
 static RELAXED: Ordering = Ordering::Relaxed;
 
 fn main() {
-    let args = args::Args::parse();
+    let args = cli::Args::parse();
     let num_threads = args.threads.unwrap_or(num_cpus::get());
     let mut handles = vec![];
     
