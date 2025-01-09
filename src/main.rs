@@ -1,13 +1,15 @@
 mod address;
 mod cli;
+mod progress_monitor;
 mod validator;
 use address::PrivateKeyAccount;
 
 use clap::Parser;
 use num_cpus;
+use progress_monitor::GenerationStats;
 use std::{
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicBool, Ordering},
         mpsc, Arc,
     },
     thread,
@@ -18,18 +20,19 @@ static RELAXED: Ordering = Ordering::Relaxed;
 
 fn main() {
     let args = cli::Args::parse();
-    let num_threads = args.threads.unwrap_or(num_cpus::get());
+    let num_threads = args.num_threads.unwrap_or(num_cpus::get());
     let mut handles = vec![];
-    
-    let max = args.max.unwrap_or(0);
-    let limit = args.limit.unwrap_or(0);
+
+    let stats = GenerationStats::new(
+        args.max_attempts.unwrap_or(0),
+        args.max_matches.unwrap_or(0),
+    );
+
     let validator = Arc::new(validator::AddressValidator::new(&args));
-    let found_count = Arc::new(AtomicU64::new(0));
-    let attempt_count = Arc::new(AtomicU64::new(0));
     let (tx, rx) = mpsc::channel();
 
-    let attempt_count_clone = attempt_count.clone();
-    let found_count_clone = found_count.clone();
+    let attempt_count_clone = stats.attempt_count.clone();
+    let found_count_clone = stats.found_count.clone();
 
     let status_thread_running = Arc::new(AtomicBool::new(true));
 
@@ -65,12 +68,12 @@ fn main() {
     for _ in 0..num_threads {
         let tx_clone = tx.clone();
         let validator_clone = validator.clone();
-        let found_count_clone = found_count.clone();
-        let attempt_count_clone = attempt_count.clone();
+        let found_count_clone = stats.found_count.clone();
+        let attempt_count_clone = stats.attempt_count.clone();
 
         let handle = thread::spawn(move || loop {
-            if (max > 0 && attempt_count_clone.load(RELAXED) >= max)
-                || (limit > 0 && found_count_clone.load(RELAXED) >= limit)
+            if (stats.max_attempts > 0 && attempt_count_clone.load(RELAXED) >= stats.max_attempts)
+                || (stats.max_matches > 0 && found_count_clone.load(RELAXED) >= stats.max_matches)
             {
                 break;
             }
@@ -105,6 +108,6 @@ fn main() {
     }
     stats_handle.join().unwrap();
     println!("Done");
-    println!("Found: {}", found_count.load(RELAXED));
-    println!("Attempts: {}", attempt_count.load(RELAXED));
+    println!("Found: {}", stats.found_count.load(RELAXED));
+    println!("Attempts: {}", stats.attempt_count.load(RELAXED));
 }

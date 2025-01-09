@@ -3,31 +3,31 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    /// Maximum number of times to generate addresses.
-    #[arg(short, long)]
-    pub max: Option<u64>,
+    /// Maximum number of attempts to generate addresses.
+    #[arg(short = 'a', long)]
+    pub max_attempts: Option<u64>,
 
-    /// Maximum number of results to return.
-    #[arg(short, long)]
-    pub limit: Option<u64>,
+    /// Maximum number of matching addresses to return.
+    #[arg(short = 'm', long)]
+    pub max_matches: Option<u64>,
 
-    /// Maximum number of concurrent threads to use.
-    #[arg(short, long)]
-    pub threads: Option<usize>,
+    /// Number of concurrent threads to use.
+    #[arg(short = 't', long)]
+    pub num_threads: Option<usize>,
 
-    /// Strings that the address must contain.
-    #[arg(short, long)]
-    pub contains: Option<Vec<String>>,
+    /// Substrings that the address must contain.
+    #[arg(short = 'c', long)]
+    pub substrings: Option<Vec<String>>,
 
     /// Prefix that the address must match.
-    #[arg(short, long)]
-    pub prefix: Option<String>,
+    #[arg(short = 'p', long)]
+    pub required_prefix: Option<String>,
 
     /// Suffix that the address must match.
-    #[arg(short, long)]
-    pub suffix: Option<String>,
+    #[arg(short = 's', long)]
+    pub required_suffix: Option<String>,
 
     /// Regular expression that the address must match.
-    #[arg(short, long)]
-    pub regex: Option<String>,
+    #[arg(short = 'r', long)]
+    pub match_regex: Option<String>,
 }
