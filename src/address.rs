@@ -1,12 +1,12 @@
 use std::fmt::Display;
 
+use bip32::{DerivationPath, XPrv};
+use bip39::{Language, Mnemonic};
 use secp256k1::rand::rngs::OsRng;
 use secp256k1::{PublicKey, Secp256k1, SecretKey};
 use tiny_keccak::{Hasher, Keccak};
 
 pub type EthereumAddress = [u8; 20];
-
-pub type Keccak256Hash = [u8; 32];
 
 pub struct Address {
     address: EthereumAddress,
@@ -14,8 +14,33 @@ pub struct Address {
 
 pub struct PrivateKeyAccount {
     pub secret_key: SecretKey,
-    pub public_key: PublicKey,
     pub address: Address,
+}
+
+pub struct MnemonicAccount {
+    pub mnemonic: String,
+    pub address: Address,
+}
+
+impl MnemonicAccount {
+    pub fn from_random_mnemonic(word_count: usize) -> Self {
+        let mnemonic = Mnemonic::generate(word_count).unwrap();
+        let seed = mnemonic.to_seed("");
+        let path = "m/44'/60'/0'/0/0"
+            .parse()
+            .map_err(|e| format!("Invalid derivation path: {}", e))
+            .unwrap();
+
+        let private_key = XPrv::derive_from_path(&seed, &path)
+            .map_err(|e| format!("Failed to derive private key: {}", e))
+            .unwrap();
+
+        let public_key = PublicKey::from_slice(&private_key.public_key().to_bytes()).unwrap();
+        MnemonicAccount {
+            mnemonic: mnemonic.to_string(),
+            address: Address::from_public_key(&public_key.serialize_uncompressed()),
+        }
+    }
 }
 
 impl PrivateKeyAccount {
@@ -25,15 +50,13 @@ impl PrivateKeyAccount {
 
         PrivateKeyAccount {
             secret_key,
-            public_key,
-            address: Address::new(&public_key),
+            address: Address::from_public_key(&public_key.serialize_uncompressed()),
         }
     }
 }
 
 impl Address {
-    pub fn new(public_key: &PublicKey) -> Self {
-        let public_key = public_key.serialize_uncompressed();
+    pub fn from_public_key(public_key: &[u8]) -> Self {
         let public_key = &public_key[1..];
         let mut hasher = Keccak::v256();
         hasher.update(public_key);

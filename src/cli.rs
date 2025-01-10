@@ -1,33 +1,47 @@
-use clap::Parser;
+use clap::{ArgGroup, Parser};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
+#[command(group(
+    ArgGroup::new("input")
+        .required(true)
+        .args(&["from_mnemonic", "from_private_key"]),
+))]
 pub struct Args {
-    /// Maximum number of attempts to generate addresses.
+    /// Generate address from a random mnemonic phrase.
+    #[arg(long)]
+    pub from_mnemonic: bool,
+
+    /// Generate address from a private key.
+    #[arg(long)]
+    pub from_private_key: bool,
+
+    /// Maximum number of attempts to generate addresses (default: unlimited).
     #[arg(short = 'a', long)]
     pub max_attempts: Option<u64>,
 
-    /// Maximum number of matching addresses to return.
-    #[arg(short = 'm', long)]
-    pub max_matches: Option<u64>,
+    /// Maximum number of matching addresses to return (default: 1).
+    #[arg(short = 'l', long)]
+    pub limit:  Option<u64>,
 
-    /// Number of concurrent threads to use.
+    /// Number of concurrent threads to use (default: number of CPU cores).
     #[arg(short = 't', long)]
-    pub num_threads: Option<usize>,
+    pub threads: Option<usize>,
 
-    /// Substrings that the address must contain.
+    /// Substrings that the address must contain (case-insensitive).
     #[arg(short = 'c', long)]
-    pub substrings: Option<Vec<String>>,
+    pub contains: Option<Vec<String>>,
 
-    /// Prefix that the address must match.
+    /// Prefix that the address must start with.
     #[arg(short = 'p', long)]
-    pub required_prefix: Option<String>,
+    pub prefix: Option<String>,
 
-    /// Suffix that the address must match.
+    /// Suffix that the address must end with.
     #[arg(short = 's', long)]
-    pub required_suffix: Option<String>,
+    pub suffix: Option<String>,
 
-    /// Regular expression that the address must match.
+    /// Regular expression that the address must match (supports Rust regex syntax).
+    /// Example: "^[a-zA-Z0-9]{4}.*\\d{2}$"
     #[arg(short = 'r', long)]
-    pub match_regex: Option<String>,
+    pub regex: Option<String>,
 }

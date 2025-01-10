@@ -1,7 +1,4 @@
-use std::{
-    sync::{atomic::AtomicU64, Arc},
-    time::Instant,
-};
+use std::sync::{atomic::AtomicU64, Arc};
 
 #[derive(Debug, Clone)]
 pub struct GenerationStats {
@@ -9,7 +6,6 @@ pub struct GenerationStats {
     pub max_matches: u64,
     pub found_count: Arc<AtomicU64>,
     pub attempt_count: Arc<AtomicU64>,
-    pub start_time: Instant,
 }
 
 impl GenerationStats {
@@ -19,7 +15,6 @@ impl GenerationStats {
             max_matches,
             found_count: Arc::new(AtomicU64::new(0)),
             attempt_count: Arc::new(AtomicU64::new(0)),
-            start_time: Instant::now(),
         }
     }
 }

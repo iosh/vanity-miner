@@ -2,7 +2,7 @@ mod address;
 mod cli;
 mod progress_monitor;
 mod validator;
-use address::PrivateKeyAccount;
+use address::{MnemonicAccount, PrivateKeyAccount};
 
 use clap::Parser;
 use num_cpus;
@@ -20,13 +20,10 @@ static RELAXED: Ordering = Ordering::Relaxed;
 
 fn main() {
     let args = cli::Args::parse();
-    let num_threads = args.num_threads.unwrap_or(num_cpus::get());
+    let num_threads = args.threads.unwrap_or(num_cpus::get());
     let mut handles = vec![];
 
-    let stats = GenerationStats::new(
-        args.max_attempts.unwrap_or(0),
-        args.max_matches.unwrap_or(0),
-    );
+    let stats = GenerationStats::new(args.max_attempts.unwrap_or(0), args.limit.unwrap_or(0));
 
     let validator = Arc::new(validator::AddressValidator::new(&args));
     let (tx, rx) = mpsc::channel();
@@ -59,7 +56,6 @@ fn main() {
                 current_attempt,
                 current_found
             );
-
             last_attempt = current_attempt;
             last_time = current_time;
         }
@@ -78,13 +74,24 @@ fn main() {
                 break;
             }
 
-            let private_key_account = PrivateKeyAccount::from_random_private_key();
+            let (address, secret) = if args.from_private_key {
+                let private_key_account = PrivateKeyAccount::from_random_private_key();
+                (
+                    private_key_account.address.hex_address(),
+                    private_key_account.secret_key.display_secret().to_string(),
+                )
+            } else {
+                let mnemonic_account = MnemonicAccount::from_random_mnemonic(12);
+                (
+                    mnemonic_account.address.hex_address(),
+                    mnemonic_account.mnemonic.to_string(),
+                )
+            };
 
-            let address = private_key_account.address.hex_address();
             if validator_clone.validate(&address) {
                 found_count_clone.fetch_add(1, RELAXED);
                 tx_clone
-                    .send((format!("0x{}", address), private_key_account))
+                    .send((format!("0x{}", address), secret.to_string()))
                     .unwrap();
             }
 
@@ -95,11 +102,7 @@ fn main() {
     }
     drop(tx);
     for (addr, pk) in rx {
-        println!(
-            "found address {}, private key {}",
-            addr,
-            pk.secret_key.display_secret()
-        );
+        println!("found address {}, private key {}", addr, pk);
     }
     status_thread_running.store(false, RELAXED);
 
