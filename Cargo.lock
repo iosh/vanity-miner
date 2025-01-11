@@ -590,6 +590,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "keccak"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecc2af9a1119c51f12a14607e783cb977bde58bc069ff0c3da1095e635d70654"
+dependencies = [
+ "cpufeatures",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.169"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -893,6 +902,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3"
+version = "0.10.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
+dependencies = [
+ "digest",
+ "keccak",
+]
+
+[[package]]
 name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -929,15 +948,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "tiny-keccak"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
-dependencies = [
- "crunchy",
 ]
 
 [[package]]
@@ -1004,7 +1014,7 @@ dependencies = [
  "num_cpus",
  "regex",
  "secp256k1",
- "tiny-keccak",
+ "sha3",
 ]
 
 [[package]]

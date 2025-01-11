@@ -4,8 +4,7 @@ use bip32::{DerivationPath, XPrv};
 use bip39::{Language, Mnemonic};
 use secp256k1::rand::rngs::ThreadRng;
 use secp256k1::{PublicKey, Secp256k1, SecretKey};
-use tiny_keccak::{Hasher, Keccak};
-
+use sha3::{Digest, Keccak256};
 pub type EthereumAddress = [u8; 20];
 
 pub struct Address {
@@ -53,13 +52,12 @@ impl PrivateKeyAccount {
 
 impl Address {
     pub fn from_public_key(public_key: &[u8]) -> Self {
-        let public_key = &public_key[1..];
-        let mut hasher = Keccak::v256();
-        hasher.update(public_key);
-        let mut output = [0u8; 32];
-        hasher.finalize(&mut output);
+        let mut hasher = Keccak256::new();
+        hasher.update(&public_key[1..]);
 
-        let address = <EthereumAddress>::try_from(&output[12..]).unwrap();
+        let result = hasher.finalize();
+
+        let address = <EthereumAddress>::try_from(&result[12..]).unwrap();
 
         Address { address }
     }
