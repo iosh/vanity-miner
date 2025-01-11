@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use bip32::{DerivationPath, XPrv};
 use bip39::{Language, Mnemonic};
-use secp256k1::rand::rngs::OsRng;
+use secp256k1::rand::rngs::ThreadRng;
 use secp256k1::{PublicKey, Secp256k1, SecretKey};
 use tiny_keccak::{Hasher, Keccak};
 
@@ -23,15 +23,11 @@ pub struct MnemonicAccount {
 }
 
 impl MnemonicAccount {
-    pub fn from_random_mnemonic(word_count: usize) -> Self {
+    pub fn from_random_mnemonic(word_count: usize, path: &DerivationPath) -> Self {
         let mnemonic = Mnemonic::generate(word_count).unwrap();
         let seed = mnemonic.to_seed("");
-        let path = "m/44'/60'/0'/0/0"
-            .parse()
-            .map_err(|e| format!("Invalid derivation path: {}", e))
-            .unwrap();
 
-        let private_key = XPrv::derive_from_path(&seed, &path)
+        let private_key = XPrv::derive_from_path(&seed, path)
             .map_err(|e| format!("Failed to derive private key: {}", e))
             .unwrap();
 
@@ -46,7 +42,7 @@ impl MnemonicAccount {
 impl PrivateKeyAccount {
     pub fn from_random_private_key() -> Self {
         let secp = Secp256k1::new();
-        let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
+        let (secret_key, public_key) = secp.generate_keypair(&mut ThreadRng::default());
 
         PrivateKeyAccount {
             secret_key,
@@ -89,5 +85,16 @@ mod tests {
         let address: String = account.address.hex_address();
 
         assert_eq!(address.len(), 40);
+    }
+
+    #[test]
+
+    fn test_random_mnemonic_address() {
+        let account =
+            MnemonicAccount::from_random_mnemonic(12, &"m/44'/60'/0'/0/0".parse().unwrap());
+        let address: String = account.address.hex_address();
+
+        assert_eq!(address.len(), 40);
+        assert_eq!(account.mnemonic.split(" ").count(), 12);
     }
 }

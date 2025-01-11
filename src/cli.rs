@@ -44,4 +44,8 @@ pub struct Args {
     /// Example: "^[a-zA-Z0-9]{4}.*\\d{2}$"
     #[arg(short = 'r', long)]
     pub regex: Option<String>,
+
+    /// Derivation path to use when generating a mnemonic phrase address.
+    #[arg(long, default_value = "m/44'/60'/0'/0/0")]
+    pub derivation_path: String,
 }
