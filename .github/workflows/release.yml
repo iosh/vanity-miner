@@ -19,11 +19,19 @@ jobs:
             cross: true
             cargo_command: cross
 
-          - os_name: Linux-x86_64
+          - os_name: Linux-x86_64-musl
             os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             bin: vanity-miner
             name: vanity-miner-x86_64-unknown-linux-musl
+            cross: false
+            cargo_command: cargo
+
+          - os_name: Linux-x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            bin: vanity-miner
+            name: vanity-miner-x86_64-unknown-linux-gnu
             cross: false
             cargo_command: cargo
 
