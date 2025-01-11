@@ -15,6 +15,7 @@ jobs:
             os: ubuntu-24.04
             target: x86_64-unknown-freebsd
             bin: vanity-miner
+            name: vanity-miner-FreeBSD-x86_64.tar.gz
             cross: true
             cargo_command: cross
 
@@ -22,6 +23,7 @@ jobs:
             os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             bin: vanity-miner
+            name: vanity-miner-Linux-x86_64-musl.tar.gz
             cross: false
             cargo_command: cargo
 
@@ -29,6 +31,7 @@ jobs:
             os: macos-15
             target: aarch64-apple-darwin
             bin: vanity-miner
+            name: vanity-miner-aarch64-apple-darwin.zip
             cross: false
             cargo_command: cargo
 
@@ -36,6 +39,7 @@ jobs:
             os: windows-2022
             target: aarch64-pc-windows-msvc
             bin: vanity-miner.exe
+            name: vanity-miner-Windows-aarch64.zip
             cross: false
             cargo_command: cargo
 
@@ -43,6 +47,7 @@ jobs:
             os: windows-2022
             target: x86_64-pc-windows-msvc
             bin: vanity-miner.exe
+            name: vanity-miner-Windows-x86_64.zip
             cross: false
             cargo_command: cargo
 
@@ -88,7 +93,7 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
-          
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
