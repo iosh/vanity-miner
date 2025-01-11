@@ -83,7 +83,7 @@ jobs:
       - name: compress
         run: |
           cd ./artifact
-          tar -zcvf conflux-${{ matrix.platform.name }}.tar.gz ./*
+          tar -zcvf ${{ matrix.platform.name }}.tar.gz ./*
 
       - name: Create release artifact
         uses: actions/upload-artifact@v4
