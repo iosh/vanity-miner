@@ -82,14 +82,13 @@ jobs:
 
       - name: compress
         run: |
-          cd ./artifact
-          tar -zcvf ${{ matrix.platform.name }}.tar.gz ./*
+          tar -zcvf ./${{ matrix.platform.name }}.tar.gz ./artifact/*
 
       - name: Create release artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.name }}
-          path: artifact/${{ matrix.platform.name }}.tar.gz
+          path: ./${{ matrix.platform.name }}.tar.gz
 
   publish:
     permissions:
