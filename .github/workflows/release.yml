@@ -18,27 +18,12 @@ jobs:
             name: vanity-miner-FreeBSD-x86_64.tar.gz
             cross: true
             cargo_command: cross
+
           - os_name: Linux-x86_64
             os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             bin: vanity-miner
             name: vanity-miner-Linux-x86_64-musl.tar.gz
-            cross: false
-            cargo_command: cargo
-
-          - os_name: Windows-aarch64
-            os: windows-2022
-            target: aarch64-pc-windows-msvc
-            bin: vanity-miner.exe
-            name: vanity-miner-Windows-aarch64.zip
-            cross: false
-            cargo_command: cargo
-
-          - os_name: Windows-aarch64
-            os: windows-2022
-            target: x86_64-pc-windows-msvc
-            bin: vanity-miner.exe
-            name: vanity-miner-Windows-x86_64.zip
             cross: false
             cargo_command: cargo
 
@@ -50,7 +35,23 @@ jobs:
             cross: false
             cargo_command: cargo
 
-    runs-on: ${{ matrix.os }}
+          - os_name: Windows-aarch64
+            os: windows-2022
+            target: aarch64-pc-windows-msvc
+            bin: vanity-miner.exe
+            name: vanity-miner-Windows-aarch64.zip
+            cross: false
+            cargo_command: cargo
+
+          - os_name: Windows-x86_64
+            os: windows-2022
+            target: x86_64-pc-windows-msvc
+            bin: vanity-miner.exe
+            name: vanity-miner-Windows-x86_64.zip
+            cross: false
+            cargo_command: cargo
+
+    runs-on: ${{ matrix.platform.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
