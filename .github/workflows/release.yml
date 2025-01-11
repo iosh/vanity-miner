@@ -89,7 +89,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.name }}
-          path: ./${{ matrix.platform.name }}.tar.gz
+          path: ./artifact/${{ matrix.platform.name }}.tar.gz
 
   publish:
     permissions:
