@@ -1,9 +1,7 @@
-use std::fmt::Display;
-
 use bip32::{DerivationPath, XPrv};
 use bip39::{Language, Mnemonic};
 use secp256k1::rand::rngs::ThreadRng;
-use secp256k1::{PublicKey, Secp256k1, SecretKey};
+use secp256k1::{Secp256k1, SecretKey};
 use sha3::{Digest, Keccak256};
 
 pub type EthereumAddressBytes = [u8; 20];
@@ -64,10 +62,6 @@ impl Address {
         let address = <EthereumAddressBytes>::try_from(&result[12..]).unwrap();
 
         Address { address }
-    }
-
-    pub fn as_bytes(&self) -> &EthereumAddressBytes {
-        &self.address
     }
     pub fn hex_address(&self) -> String {
         const HEX_LEN: usize = 40; // 20 bytes * 2
