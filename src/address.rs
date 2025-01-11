@@ -1,5 +1,5 @@
 use bip32::{DerivationPath, XPrv};
-use bip39::{Language, Mnemonic};
+use bip39::Mnemonic;
 use secp256k1::rand::rngs::ThreadRng;
 use secp256k1::{Secp256k1, SecretKey};
 use sha3::{Digest, Keccak256};

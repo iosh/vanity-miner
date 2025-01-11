@@ -1,3 +1,4 @@
+use bip39::Language;
 use clap::{ArgGroup, Parser};
 
 #[derive(Parser, Debug)]
@@ -50,7 +51,24 @@ pub struct Args {
     pub derivation_path: String,
 
     /// Number of mnemonic words to use when generating a mnemonic phrase address.
-    /// Only
-    #[arg(short, long)]
-    pub mnemonic_words: Option<u16>,
+    #[arg(short, long, value_parser = parse_word_count)]
+    pub mnemonic_words: Option<usize>,
+}
+
+const MIN_NB_WORDS: usize = 12;
+const MAX_NB_WORDS: usize = 24;
+
+fn parse_word_count(word_count: &str) -> Result<usize, String> {
+    let word_count: usize = word_count
+        .parse()
+        .map_err(|_| "Word count must be a number".to_string())?;
+
+    if word_count < MIN_NB_WORDS || word_count % 3 != 0 || word_count > MAX_NB_WORDS {
+        Err(format!(
+            "Word count must be between {} and {}, and must be a multiple of 3",
+            MIN_NB_WORDS, MAX_NB_WORDS
+        ))
+    } else {
+        Ok(word_count)
+    }
 }
