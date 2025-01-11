@@ -77,7 +77,7 @@ jobs:
 
       - name: copy binary
         run: |
-          cd ./artifact
+          mkdir ./artifact
           cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} artifact/${{ matrix.platform.name }}
 
       - name: compress
