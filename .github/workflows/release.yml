@@ -15,7 +15,7 @@ jobs:
             os: ubuntu-24.04
             target: x86_64-unknown-freebsd
             bin: vanity-miner
-            name: vanity-miner-FreeBSD-x86_64.tar.gz
+            name: vanity-miner-x86_64-unknown-freebsd
             cross: true
             cargo_command: cross
 
@@ -23,7 +23,7 @@ jobs:
             os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             bin: vanity-miner
-            name: vanity-miner-Linux-x86_64-musl.tar.gz
+            name: vanity-miner-x86_64-unknown-linux-musl
             cross: false
             cargo_command: cargo
 
@@ -31,7 +31,7 @@ jobs:
             os: macos-15
             target: aarch64-apple-darwin
             bin: vanity-miner
-            name: vanity-miner-aarch64-apple-darwin.zip
+            name: vanity-miner-aarch64-apple-darwin
             cross: false
             cargo_command: cargo
 
@@ -39,7 +39,7 @@ jobs:
             os: windows-2022
             target: aarch64-pc-windows-msvc
             bin: vanity-miner.exe
-            name: vanity-miner-Windows-aarch64.zip
+            name: vanity-miner-aarch64-pc-windows-msvc
             cross: false
             cargo_command: cargo
 
@@ -47,7 +47,7 @@ jobs:
             os: windows-2022
             target: x86_64-pc-windows-msvc
             bin: vanity-miner.exe
-            name: vanity-miner-Windows-x86_64.zip
+            name: vanity-miner-x86_64-pc-windows-msvc
             cross: false
             cargo_command: cargo
 
@@ -75,11 +75,15 @@ jobs:
         run: |
           ${{ matrix.platform.cargo_command }} build --release --target ${{ matrix.platform.target }}
 
+      - name: copy binary
+        run: |
+          cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} artifacts/${{ matrix.platform.name }}
+
       - name: Create release artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.name }}
-          path: target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+          path: artifacts/${{ matrix.platform.name }}
 
   publish:
     permissions:
