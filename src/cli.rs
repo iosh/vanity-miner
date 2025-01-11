@@ -1,4 +1,3 @@
-use bip39::Language;
 use clap::{ArgGroup, Parser};
 
 #[derive(Parser, Debug)]

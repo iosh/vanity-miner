@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: build - ${{ matrix.platform.os_name }}
+    strategy:
+      matrix:
+        platform:
+          - os_name: FreeBSD-x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-freebsd
+            bin: vanity-miner
+            name: vanity-miner-FreeBSD-x86_64.tar.gz
+            cross: true
+            cargo_command: cross
+          - os_name: Linux-x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            bin: vanity-miner
+            name: vanity-miner-Linux-x86_64-musl.tar.gz
+            cross: false
+            cargo_command: cargo
+
+          - os_name: Windows-aarch64
+            os: windows-2022
+            target: aarch64-pc-windows-msvc
+            bin: vanity-miner.exe
+            name: vanity-miner-Windows-aarch64.zip
+            cross: false
+            cargo_command: cargo
+
+          - os_name: Windows-aarch64
+            os: windows-2022
+            target: x86_64-pc-windows-msvc
+            bin: vanity-miner.exe
+            name: vanity-miner-Windows-x86_64.zip
+            cross: false
+            cargo_command: cargo
+
+          - os_name: macos-aarch64
+            os: macos-15
+            target: aarch64-apple-darwin
+            bin: vanity-miner
+            name: vanity-miner-aarch64-apple-darwin.zip
+            cross: false
+            cargo_command: cargo
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install toolchain if not cross-compiling
+        uses: dtolnay/rust-toolchain@stable
+        if: ${{ !matrix.platform.cross }}
+        with:
+          targets: ${{ matrix.platform.target }}
+
+      - name: Install musl-tools on Linux
+        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
+        if: contains(matrix.platform.os, 'ubuntu') && !matrix.platform.cross
+
+      - name: Install cross
+        shell: bash
+        run: |
+          cargo install cross --git https://github.com/cross-rs/cross
+        if: matrix.platform.cross
+
+      - name: Build
+        run: |
+          ${{ matrix.platform.cargo_command }} build --release --target ${{ matrix.platform.target }}
+
+      - name: Create release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.name }}
+          path: target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+
+  publish:
+    permissions:
+      contents: write
+    name: publish
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: ./
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./*
