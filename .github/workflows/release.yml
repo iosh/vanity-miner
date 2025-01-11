@@ -80,11 +80,16 @@ jobs:
           mkdir artifacts
           cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} artifacts/${{ matrix.platform.name }}
 
+      - name: compress
+        run: |
+          cd ./artifact
+          tar -zcvf conflux-${{ matrix.platform.name }}.tar.gz ./*
+
       - name: Create release artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.name }}
-          path: artifacts/${{ matrix.platform.name }}
+          path: artifacts/${{ matrix.platform.name }}.tar.gz
 
   publish:
     permissions:
