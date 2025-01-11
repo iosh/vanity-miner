@@ -78,11 +78,12 @@ jobs:
       - name: copy binary
         run: |
           mkdir ./artifact
-          cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} artifact/${{ matrix.platform.name }}
+          cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} artifact/${{ matrix.platform.bin }}
 
       - name: compress
         run: |
-          tar -zcvf ./${{ matrix.platform.name }}.tar.gz ./artifact/*
+          cd artifact
+          tar -zcvf ./${{ matrix.platform.name }}.tar.gz ./${{matrix.platform.bin}}
 
       - name: Create release artifact
         uses: actions/upload-artifact@v4
