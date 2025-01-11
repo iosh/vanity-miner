@@ -77,7 +77,12 @@ fn main() {
 
         let derivation_path = args.derivation_path.clone();
         let from_private_key = args.from_private_key.clone();
-        let validator = validator::AddressValidator::new(&args);
+        let validator = validator::AddressValidator::new(
+            args.contains.clone(),
+            args.prefix.clone(),
+            args.suffix.clone(),
+            args.regex.clone(),
+        );
 
         let handle = thread::spawn(move || {
             let address_generator =

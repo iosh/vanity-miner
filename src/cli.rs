@@ -8,10 +8,6 @@ use clap::{ArgGroup, Parser};
         .args(&["from_mnemonic", "from_private_key"]),
 ))]
 pub struct Args {
-    /// Generate address from a random mnemonic phrase.
-    #[arg(long)]
-    pub from_mnemonic: bool,
-
     /// Generate address from a private key.
     #[arg(long)]
     pub from_private_key: bool,
@@ -45,7 +41,16 @@ pub struct Args {
     #[arg(short = 'r', long)]
     pub regex: Option<String>,
 
+    /// Generate address from a random mnemonic phrase.
+    #[arg(long)]
+    pub from_mnemonic: bool,
+
     /// Derivation path to use when generating a mnemonic phrase address.
     #[arg(long, default_value = "m/44'/60'/0'/0/0")]
     pub derivation_path: String,
+
+    /// Number of mnemonic words to use when generating a mnemonic phrase address.
+    /// Only
+    #[arg(short, long)]
+    pub mnemonic_words: Option<u16>,
 }
