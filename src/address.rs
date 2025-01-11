@@ -5,10 +5,11 @@ use bip39::{Language, Mnemonic};
 use secp256k1::rand::rngs::ThreadRng;
 use secp256k1::{PublicKey, Secp256k1, SecretKey};
 use sha3::{Digest, Keccak256};
-pub type EthereumAddress = [u8; 20];
+
+pub type EthereumAddressBytes = [u8; 20];
 
 pub struct Address {
-    address: EthereumAddress,
+    address: EthereumAddressBytes,
 }
 
 pub struct PrivateKeyAccount {
@@ -30,10 +31,13 @@ impl MnemonicAccount {
             .map_err(|e| format!("Failed to derive private key: {}", e))
             .unwrap();
 
-        let public_key = PublicKey::from_slice(&private_key.public_key().to_bytes()).unwrap();
+        let public_key = private_key
+            .public_key()
+            .public_key()
+            .to_encoded_point(false);
         MnemonicAccount {
             mnemonic: mnemonic.to_string(),
-            address: Address::from_public_key(&public_key.serialize_uncompressed()),
+            address: Address::from_public_key(&public_key.as_bytes()),
         }
     }
 }
@@ -57,19 +61,19 @@ impl Address {
 
         let result = hasher.finalize();
 
-        let address = <EthereumAddress>::try_from(&result[12..]).unwrap();
+        let address = <EthereumAddressBytes>::try_from(&result[12..]).unwrap();
 
         Address { address }
     }
 
-    pub fn hex_address(&self) -> String {
-        hex::encode(&self.address)
+    pub fn as_bytes(&self) -> &EthereumAddressBytes {
+        &self.address
     }
-}
-
-impl Display for Address {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "0x{}", hex::encode(&self.address))
+    pub fn hex_address(&self) -> String {
+        const HEX_LEN: usize = 40; // 20 bytes * 2
+        let mut hex = String::with_capacity(HEX_LEN);
+        hex.extend(hex::encode(&self.address).chars());
+        hex
     }
 }
 

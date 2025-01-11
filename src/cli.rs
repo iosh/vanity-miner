@@ -22,7 +22,7 @@ pub struct Args {
 
     /// Maximum number of matching addresses to return (default: 1).
     #[arg(short = 'l', long)]
-    pub limit:  Option<u64>,
+    pub limit: Option<u64>,
 
     /// Number of concurrent threads to use (default: number of CPU cores).
     #[arg(short = 't', long)]

@@ -59,8 +59,8 @@ mod tests {
     #[test]
     fn test_contains_validate() {
         let validator = AddressValidator::new(&Args {
-            from_mnemonic:false,
-            from_private_key:false,
+            from_mnemonic: false,
+            from_private_key: false,
             max_attempts: None,
             limit: None,
             threads: None,
@@ -72,7 +72,7 @@ mod tests {
             prefix: None,
             suffix: None,
             regex: None,
-            derivation_path: "m/44'/60'/0'/0/0".to_string()
+            derivation_path: "m/44'/60'/0'/0/0".to_string(),
         });
 
         assert!(validator.validate("1230000000000000000000000000000000000000"));
@@ -85,8 +85,8 @@ mod tests {
     #[test]
     fn test_prefix_validate() {
         let validator = AddressValidator::new(&Args {
-            from_mnemonic:false,
-            from_private_key:false,
+            from_mnemonic: false,
+            from_private_key: false,
             max_attempts: None,
             limit: None,
             threads: None,
@@ -94,7 +94,7 @@ mod tests {
             prefix: Some("123".to_string()),
             suffix: None,
             regex: None,
-            derivation_path: "m/44'/60'/0'/0/0".to_string()
+            derivation_path: "m/44'/60'/0'/0/0".to_string(),
         });
 
         assert!(validator.validate("1230000000000000000000000000000000000000"));
@@ -107,8 +107,8 @@ mod tests {
     #[test]
     fn test_suffix_validate() {
         let validator = AddressValidator::new(&Args {
-            from_mnemonic:false,
-            from_private_key:false,
+            from_mnemonic: false,
+            from_private_key: false,
             max_attempts: None,
             limit: None,
             threads: None,
@@ -116,7 +116,7 @@ mod tests {
             prefix: None,
             suffix: Some("123".to_string()),
             regex: None,
-            derivation_path: "m/44'/60'/0'/0/0".to_string()
+            derivation_path: "m/44'/60'/0'/0/0".to_string(),
         });
 
         assert!(validator.validate("0000000000000000000000000000000000000123"));
@@ -129,8 +129,8 @@ mod tests {
     #[test]
     fn test_regex_validate() {
         let validator = AddressValidator::new(&Args {
-            from_mnemonic:false,
-            from_private_key:false,
+            from_mnemonic: false,
+            from_private_key: false,
             max_attempts: None,
             limit: None,
             threads: None,
@@ -138,7 +138,7 @@ mod tests {
             prefix: None,
             suffix: None,
             regex: Some("0{10}".to_string()),
-            derivation_path: "m/44'/60'/0'/0/0".to_string()
+            derivation_path: "m/44'/60'/0'/0/0".to_string(),
         });
 
         assert!(validator.validate("0000000000111111111111111111111111111111"));
