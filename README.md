@@ -61,4 +61,4 @@ found address: 0x0000939f6d88f30ef85d59ab6c621b6426f54700, secret: major ensure 
 ```
 This will use 5 threads, generate 100000 addresses, and return addresses that start with 0000 
 
-> The private key mode is significantly faster than the mnemonic mode, being approximately 32 times quicker (tested on an i5 12500H).
+> The private key mode is faster than the mnemonic mode, being approximately 32 times quicker (tested on an i5 12500H).
