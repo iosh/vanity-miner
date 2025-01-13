@@ -77,6 +77,8 @@ fn main() {
 
         let derivation_path = args.derivation_path.clone();
         let from_private_key = args.from_private_key.clone();
+        let address_format = args.address_format.clone();
+        let network = args.cfx_network.clone();
         let validator = validator::AddressValidator::new(
             args.contains.clone(),
             args.prefix.clone(),
@@ -86,7 +88,7 @@ fn main() {
 
         let handle = thread::spawn(move || {
             let address_generator =
-                AddressGenerator::new(from_private_key, derivation_path, validator);
+                AddressGenerator::new(from_private_key, derivation_path, validator, address_format);
 
             loop {
                 if (max_attempts > 0 && attempt_count_clone.load(RELAXED) >= max_attempts)
@@ -95,7 +97,7 @@ fn main() {
                     break;
                 }
 
-                if let Some((addr, secret)) = address_generator.new_random_address() {
+                if let Some((addr, secret)) = address_generator.new_random_address(network) {
                     tx_clone.send((addr, secret)).unwrap()
                 }
 

@@ -1,5 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use vanity_miner::{address_generator::AddressGenerator, validator::AddressValidator};
+use vanity_miner::{
+    address_generator::{AddressFormat, AddressGenerator},
+    validator::AddressValidator,
+};
 
 fn private_key_with_empty_validator_benchmark(c: &mut Criterion) {
     let address_validator = AddressValidator::new(None, None, None, None);
@@ -61,8 +64,12 @@ criterion_group!(
 
 fn mnemonic_with_empty_validator_benchmark(c: &mut Criterion) {
     let address_validator = AddressValidator::new(None, None, None, None);
-    let address_generator =
-        AddressGenerator::new(false, "m/44'/60'/0'/0/0".to_string(), address_validator);
+    let address_generator = AddressGenerator::new(
+        false,
+        "m/44'/60'/0'/0/0".to_string(),
+        address_validator,
+        AddressFormat::HEX,
+    );
 
     c.bench_function("mnemonic_with_empty_validator", |b| {
         b.iter(|| address_generator.new_random_address())
@@ -71,8 +78,12 @@ fn mnemonic_with_empty_validator_benchmark(c: &mut Criterion) {
 
 fn mnemonic_with_prefix_validator_benchmark(c: &mut Criterion) {
     let address_validator = AddressValidator::new(None, Some("123".to_string()), None, None);
-    let address_generator =
-        AddressGenerator::new(false, "m/44'/60'/0'/0/0".to_string(), address_validator);
+    let address_generator = AddressGenerator::new(
+        false,
+        "m/44'/60'/0'/0/0".to_string(),
+        address_validator,
+        AddressFormat::HEX,
+    );
 
     c.bench_function("mnemonic_with_prefix_validator", |b| {
         b.iter(|| address_generator.new_random_address())
@@ -91,8 +102,12 @@ fn mnemonic_with_contains_validator_benchmark(c: &mut Criterion) {
         None,
         None,
     );
-    let address_generator =
-        AddressGenerator::new(false, "m/44'/60'/0'/0/0".to_string(), address_validator);
+    let address_generator = AddressGenerator::new(
+        false,
+        "m/44'/60'/0'/0/0".to_string(),
+        address_validator,
+        AddressFormat::HEX,
+    );
 
     c.bench_function("mnemonic_with_contains_validator", |b| {
         b.iter(|| address_generator.new_random_address())
@@ -101,8 +116,12 @@ fn mnemonic_with_contains_validator_benchmark(c: &mut Criterion) {
 
 fn mnemonic_with_regex_validator_benchmark(c: &mut Criterion) {
     let address_validator = AddressValidator::new(None, None, None, Some("0{10}".to_string()));
-    let address_generator =
-        AddressGenerator::new(false, "m/44'/60'/0'/0/0".to_string(), address_validator);
+    let address_generator = AddressGenerator::new(
+        false,
+        "m/44'/60'/0'/0/0".to_string(),
+        address_validator,
+        AddressFormat::HEX,
+    );
 
     c.bench_function("mnemonic_with_regex_validator", |b| {
         b.iter(|| address_generator.new_random_address())

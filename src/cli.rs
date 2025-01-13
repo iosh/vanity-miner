@@ -1,5 +1,7 @@
 use clap::{ArgGroup, Parser};
 
+use crate::address_generator::AddressFormat;
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 #[command(group(
@@ -52,6 +54,15 @@ pub struct Args {
     /// Number of mnemonic words to use when generating a mnemonic phrase address.
     #[arg(short, long, value_parser = parse_word_count)]
     pub mnemonic_words: Option<usize>,
+
+    /// Address format HEX(Ethereum Conflux eSpace) or BASE32 (Conflux core space) default HEX
+    #[arg(long, default_value = "HEX")]
+    pub address_format: AddressFormat,
+
+    /// If you want to use base32 for Conflux core space, you need to specify the network id
+    /// mainnet: 1029 testnet: 1028 default: 1029
+    #[arg(long, default_value = "1029")]
+    pub cfx_network: u32,
 }
 
 const MIN_NB_WORDS: usize = 12;
