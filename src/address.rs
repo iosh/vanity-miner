@@ -70,23 +70,37 @@ impl Address {
     }
 
     pub fn base32_address(&self, network: u32) -> String {
-        let version_byte = 0x00;
+        const VERSION_BYTE: u8 = 0x00;
+        const HIGH_NIBBLE_MASK: u8 = 0xF0;
+        const LOW_NIBBLE_MASK: u8 = 0x0F;
+        const FIXED_HIGH_NIBBLE: u8 = 0x10;
+
+        let mut modified_address = self.address;
+
+        // Change the first hex to 1.
+        let high_nibble = modified_address[0] & HIGH_NIBBLE_MASK;
+        if high_nibble != FIXED_HIGH_NIBBLE {
+            modified_address[0] = (modified_address[0] & LOW_NIBBLE_MASK) | FIXED_HIGH_NIBBLE;
+        }
+
+        // 确定前缀
         let prefix = match network {
             1 => "cfxtest",
             1029 => "cfx",
             _ => &format!("net{}", network),
         };
 
-        let mut payload = Vec::with_capacity(1 + self.address.len());
-        payload.push(version_byte);
-        payload.extend_from_slice(&self.address);
+        let mut payload = Vec::with_capacity(1 + modified_address.len());
+        payload.push(VERSION_BYTE);
+        payload.extend_from_slice(&modified_address);
 
         let payload_5_bits = convert_bits_8_to_5(&payload);
 
         let expanded_prefix: Vec<u8> = prefix.chars().map(|c| (c as u8) & BIT_MASK_5).collect();
-        let mut checksum_input = Vec::with_capacity(
-            expanded_prefix.len() + 1 + payload_5_bits.len() + BASE32_CHECKSUM_LEN,
-        );
+
+        let checksum_input_len =
+            expanded_prefix.len() + 1 + payload_5_bits.len() + BASE32_CHECKSUM_LEN;
+        let mut checksum_input = Vec::with_capacity(checksum_input_len);
         checksum_input.extend_from_slice(&expanded_prefix);
         checksum_input.push(0);
         checksum_input.extend_from_slice(&payload_5_bits);
@@ -94,13 +108,17 @@ impl Address {
 
         let checksum = calculate_checksum(&checksum_input);
 
-        let payload_str = payload_5_bits
+        let payload_str: String = payload_5_bits
             .iter()
             .map(|&b| CHARSET[b as usize] as char)
-            .collect::<String>();
+            .collect();
+
         let checksum_str: String = (0..BASE32_CHECKSUM_LEN)
             .rev()
-            .map(|i| CHARSET[((checksum >> (i * 5)) & 31) as usize] as char)
+            .map(|i| {
+                let index = ((checksum >> (i * 5)) & BIT_MASK_5 as u64) as usize;
+                CHARSET[index] as char
+            })
             .collect();
 
         format!("{}:{}{}", prefix, payload_str, checksum_str)
@@ -177,7 +195,7 @@ mod tests {
     #[test]
     fn test_base32_address_encode() {
         let mut addr: [u8; 20] = [0; 20];
-        hex::decode_to_slice("1357E767bc8CC8f1a1ed113444661C03A89293F5", &mut addr).unwrap();
+        hex::decode_to_slice("8357E767bc8CC8f1a1ed113444661C03A89293F5", &mut addr).unwrap();
 
         let address = Address { address: addr };
         assert_eq!(
