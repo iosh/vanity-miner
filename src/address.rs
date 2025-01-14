@@ -25,9 +25,7 @@ impl MnemonicAccount {
         let mnemonic = Mnemonic::generate(word_count).unwrap();
         let seed = mnemonic.to_seed("");
 
-        let private_key = XPrv::derive_from_path(&seed, path)
-            .map_err(|e| format!("Failed to derive private key: {}", e))
-            .unwrap();
+        let private_key = XPrv::derive_from_path(&seed, path).unwrap();
 
         let public_key = private_key
             .public_key()
@@ -53,6 +51,8 @@ impl PrivateKeyAccount {
 }
 
 const CHARSET: &[u8] = b"abcdefghjkmnprstuvwxyz0123456789";
+const BIT_MASK_5: u8 = 0x1f;
+const BASE32_CHECKSUM_LEN: usize = 8;
 
 impl Address {
     pub fn from_public_key(public_key: &[u8]) -> Self {
@@ -66,92 +66,91 @@ impl Address {
         Address { address }
     }
     pub fn hex_address(&self) -> String {
-        const HEX_LEN: usize = 40; // 20 bytes * 2
-        let mut hex = String::with_capacity(HEX_LEN);
-        hex.extend(hex::encode(&self.address).chars());
-        hex
+        format!("{}", hex::encode(&self.address))
     }
+
     pub fn base32_address(&self, network: u32) -> String {
         let version_byte = 0x00;
-        let prefix: String = match network {
-            1 => "cfxtest".to_string(),
-            1029 => "cfx".to_string(),
-            _ => format!("net{}", network),
+
+        let prefix = match network {
+            1 => "cfxtest",
+            1029 => "cfx",
+            _ => &format!("net{}", network),
         };
 
-        // 构建 payload
         let mut payload = Vec::with_capacity(1 + self.address.len());
         payload.push(version_byte);
         payload.extend_from_slice(&self.address);
 
-        // 将 payload 从 8 位转换为 5 位
         let payload_5_bits = convert_bits_8_to_5(&payload);
 
-        // 构建校验和输入数据
-        let expanded_prefix: Vec<u8> = prefix.chars().map(|c| (c as u8) & 0x1f).collect();
-        let checksum_input = expanded_prefix
-            .iter()
-            .chain(std::iter::once(&0))
-            .chain(payload_5_bits.iter())
-            .chain([0; 8].iter())
-            .cloned()
-            .collect::<Vec<u8>>();
+        let expanded_prefix: Vec<u8> = prefix.chars().map(|c| (c as u8) & BIT_MASK_5).collect();
+        let mut checksum_input = Vec::with_capacity(
+            expanded_prefix.len() + 1 + payload_5_bits.len() + BASE32_CHECKSUM_LEN,
+        );
+        checksum_input.extend_from_slice(&expanded_prefix);
+        checksum_input.push(0);
+        checksum_input.extend_from_slice(&payload_5_bits);
+        checksum_input.extend_from_slice(&[0; BASE32_CHECKSUM_LEN]);
 
-        // 计算校验和
         let checksum = calculate_checksum(&checksum_input);
 
-        // 将 5 位 payload 和校验和转换为字符串
         let payload_str = payload_5_bits
             .iter()
             .map(|&b| CHARSET[b as usize] as char)
             .collect::<String>();
-        let checksum_str: String = (0..8)
+        let checksum_str: String = (0..BASE32_CHECKSUM_LEN)
             .rev()
             .map(|i| CHARSET[((checksum >> (i * 5)) & 31) as usize] as char)
             .collect();
 
-        // 拼接最终地址字符串
         format!("{}:{}{}", prefix, payload_str, checksum_str)
     }
 }
 
 fn convert_bits_8_to_5(data: &[u8]) -> Vec<u8> {
+    const MAX_OUTPUT_LEN: usize = 34;
+
+    let mut result = Vec::with_capacity(MAX_OUTPUT_LEN);
     let mut bit_accumulator: u16 = 0;
     let mut num_bits_in_accumulator: u8 = 0;
-    let mut result = Vec::new();
 
-    for byte in data.iter() {
-        bit_accumulator = (bit_accumulator << 8) | u16::from(*byte);
+    for &byte in data.iter() {
+        bit_accumulator = (bit_accumulator << 8) | u16::from(byte);
         num_bits_in_accumulator += 8;
 
         while num_bits_in_accumulator >= 5 {
-            result.push((bit_accumulator >> (num_bits_in_accumulator - 5)) as u8 & 0x1f);
+            result.push(
+                ((bit_accumulator >> (num_bits_in_accumulator - 5)) & u16::from(BIT_MASK_5)) as u8,
+            );
             bit_accumulator &= (1 << (num_bits_in_accumulator - 5)) - 1;
             num_bits_in_accumulator -= 5;
         }
     }
 
     if num_bits_in_accumulator > 0 {
-        result.push((bit_accumulator << (5 - num_bits_in_accumulator)) as u8 & 0x1f);
+        result.push(
+            ((bit_accumulator << (5 - num_bits_in_accumulator)) & u16::from(BIT_MASK_5)) as u8,
+        );
     }
 
     result
 }
+const POLY_COEFFS: [u64; 5] = [
+    0x98f2bc8e61,
+    0x79b76d99e2,
+    0xf33e5fb3c4,
+    0xae2eabe2a8,
+    0x1e4f43e470,
+];
 
 fn calculate_checksum(data: &[u8]) -> u64 {
     let mut c: u64 = 1;
-    let poly_coeffs: [u64; 5] = [
-        0x98f2bc8e61,
-        0x79b76d99e2,
-        0xf33e5fb3c4,
-        0xae2eabe2a8,
-        0x1e4f43e470,
-    ];
     for &d in data {
         let c0 = (c >> 35) as u8;
         c = ((c & 0x07ffffffff) << 5) ^ u64::from(d);
 
-        for (i, &coeff) in poly_coeffs.iter().enumerate() {
+        for (i, &coeff) in POLY_COEFFS.iter().enumerate() {
             if (c0 >> i) & 1 != 0 {
                 c ^= coeff;
             }
