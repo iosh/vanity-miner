@@ -71,7 +71,6 @@ impl Address {
 
     pub fn base32_address(&self, network: u32) -> String {
         let version_byte = 0x00;
-
         let prefix = match network {
             1 => "cfxtest",
             1029 => "cfx",
@@ -109,29 +108,24 @@ impl Address {
 }
 
 fn convert_bits_8_to_5(data: &[u8]) -> Vec<u8> {
-    const MAX_OUTPUT_LEN: usize = 34;
-
-    let mut result = Vec::with_capacity(MAX_OUTPUT_LEN);
+    let mut result = Vec::with_capacity(data.len() * 8 + 5 - 1);
     let mut bit_accumulator: u16 = 0;
     let mut num_bits_in_accumulator: u8 = 0;
+    let groupmask = (1 << 5) - 1;
 
     for &byte in data.iter() {
         bit_accumulator = (bit_accumulator << 8) | u16::from(byte);
         num_bits_in_accumulator += 8;
 
         while num_bits_in_accumulator >= 5 {
-            result.push(
-                ((bit_accumulator >> (num_bits_in_accumulator - 5)) & u16::from(BIT_MASK_5)) as u8,
-            );
-            bit_accumulator &= (1 << (num_bits_in_accumulator - 5)) - 1;
+            result.push((bit_accumulator >> (num_bits_in_accumulator - 5)) as u8);
+            bit_accumulator &= !(groupmask << (num_bits_in_accumulator - 5));
             num_bits_in_accumulator -= 5;
         }
     }
 
     if num_bits_in_accumulator > 0 {
-        result.push(
-            ((bit_accumulator << (5 - num_bits_in_accumulator)) & u16::from(BIT_MASK_5)) as u8,
-        );
+        result.push((bit_accumulator << (5 - num_bits_in_accumulator)) as u8);
     }
 
     result
@@ -182,14 +176,13 @@ mod tests {
 
     #[test]
     fn test_base32_address_encode() {
-        let add = hex::decode("1357E767bc8CC8f1a1ed113444661C03A89293F5").unwrap();
+        let mut addr: [u8; 20] = [0; 20];
+        hex::decode_to_slice("1357E767bc8CC8f1a1ed113444661C03A89293F5", &mut addr).unwrap();
 
-        let address = Address {
-            address: add.try_into().unwrap(),
-        };
+        let address = Address { address: addr };
         assert_eq!(
-            address.base32_address(1),
-            "cfxtest:aakzt35h1wgpv6rb7yjxjvdgdub4veyx8ygm66ws2n"
+            address.base32_address(1029),
+            "cfx:aakzt35h1wgpv6rb7yjxjvdgdub4veyx8ypbtpye6b"
         )
     }
 }

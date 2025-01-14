@@ -13,10 +13,24 @@ use std::{
         mpsc, Arc,
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 static RELAXED: Ordering = Ordering::Relaxed;
+
+struct Status {
+    last_attempt: u64,
+    last_time: Instant,
+}
+
+impl Status {
+    fn new() -> Self {
+        Status {
+            last_attempt: 0,
+            last_time: Instant::now(),
+        }
+    }
+}
 
 fn main() {
     let args = cli::Args::parse();
@@ -42,13 +56,12 @@ fn main() {
     });
 
     let status_thread_running_clone = status_thread_running.clone();
+
     let stats_handle = thread::spawn(move || {
-        let mut last_attempt = 0u64;
-        let mut elapsed_time = Duration::from_secs(0);
+        let mut status = Status::new();
 
         loop {
             thread::sleep(Duration::from_secs(1));
-            elapsed_time += Duration::from_secs(1);
 
             if !status_thread_running_clone.load(RELAXED) {
                 break;
@@ -57,15 +70,18 @@ fn main() {
             let current_attempt = attempt_count_clone.load(RELAXED);
             let current_found = found_count_clone.load(RELAXED);
 
+            let elapsed = status.last_time.elapsed();
             let attempts_per_second =
-                (current_attempt - last_attempt) as f64 / elapsed_time.as_secs_f64();
+                (current_attempt - status.last_attempt) as u64 / elapsed.as_secs();
 
             println!(
                 "Speed: {:} addresses/s, Total attempts: {}, Total found: {}",
                 attempts_per_second, current_attempt, current_found
             );
-            last_attempt = current_attempt;
-            elapsed_time = Duration::from_secs(0)
+
+            // Update status
+            status.last_attempt = current_attempt;
+            status.last_time = Instant::now();
         }
     });
 
@@ -79,6 +95,7 @@ fn main() {
         let from_private_key = args.from_private_key.clone();
         let address_format = args.address_format.clone();
         let network = args.cfx_network.clone();
+
         let validator = validator::AddressValidator::new(
             args.contains.clone(),
             args.prefix.clone(),
@@ -98,7 +115,8 @@ fn main() {
                 }
 
                 if let Some((addr, secret)) = address_generator.new_random_address(network) {
-                    tx_clone.send((addr, secret)).unwrap()
+                    tx_clone.send((addr, secret)).unwrap();
+                    found_count_clone.fetch_add(1, RELAXED);
                 }
 
                 attempt_count_clone.fetch_add(1, RELAXED);
