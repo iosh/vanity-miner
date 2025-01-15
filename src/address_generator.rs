@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub struct AddressGenerator {
-    pub from_private_key: bool,
+    pub use_private_key: bool,
     pub derivation_path: DerivationPath,
     pub address_format: AddressFormat,
     pub validator: AddressValidator,
@@ -14,13 +14,13 @@ pub struct AddressGenerator {
 
 impl AddressGenerator {
     pub fn new(
-        from_private_key: bool,
+        use_private_key: bool,
         derivation_path: String,
         validator: AddressValidator,
         address_format: AddressFormat,
     ) -> AddressGenerator {
         AddressGenerator {
-            from_private_key,
+            use_private_key,
             derivation_path: derivation_path.parse().expect("Invalid derivation path"),
             validator,
             address_format,
@@ -45,7 +45,7 @@ impl AddressGenerator {
     }
 
     fn generate_address_and_secret(&self, net: u32) -> (String, String) {
-        if self.from_private_key {
+        if self.use_private_key {
             let private_key_account = PrivateKeyAccount::from_random_private_key();
             let address = self.format_address(&private_key_account.address, net);
             (
