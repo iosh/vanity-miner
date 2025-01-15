@@ -5,80 +5,81 @@ use crate::address_generator::AddressFormat;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 #[command(group(
-    ArgGroup::new("input")
-        .required(true)
-        .args(&["from_mnemonic", "from_private_key"]),
+    ArgGroup::new("use_method")
+    .required(true)
+    .args(&["use_mnemonic", "use_private_key"]),
 ))]
 pub struct Args {
-    /// Generate address from a private key.
+    /// Use a private key to generate the address.
     #[arg(long)]
-    pub from_private_key: bool,
+    pub use_private_key: bool,
 
-    /// Maximum number of attempts to generate addresses (default: unlimited).
-    #[arg(short = 'a', long)]
+    /// Max attempts to generate addresses (default: unlimited).
+    #[arg(long)]
     pub max_attempts: Option<u64>,
 
-    /// Maximum number of matching addresses to return (default: 1).
-    #[arg(short = 'l', long)]
+    /// Max matching addresses to return (default: unlimited).
+    #[arg(long)]
     pub limit: Option<u64>,
 
-    /// Number of concurrent threads to use (default: number of CPU cores).
-    #[arg(short = 't', long)]
+    /// Number of threads to use (default: number of CPU cores).
+    #[arg(long)]
     pub threads: Option<usize>,
 
-    /// Substrings that the address must contain (case-insensitive).
-    #[arg(short = 'c', long)]
+    /// Required substring(s) in the address (case-insensitive).
+    #[arg(long)]
     pub contains: Option<Vec<String>>,
 
-    /// Prefix that the address must start with.
-    #[arg(short = 'p', long)]
+    /// Required prefix for the address.
+    #[arg(long)]
     pub prefix: Option<String>,
 
-    /// Suffix that the address must end with.
-    #[arg(short = 's', long)]
+    /// Required suffix for the address.
+    #[arg(long)]
     pub suffix: Option<String>,
 
-    /// Regular expression that the address must match (supports Rust regex syntax).
+    /// Regex for the address (Rust regex syntax).
     /// Example: "^[a-zA-Z0-9]{4}.*\\d{2}$"
-    #[arg(short = 'r', long)]
+    #[arg(long)]
     pub regex: Option<String>,
 
-    /// Generate address from a random mnemonic phrase.
+    /// Use a random mnemonic to generate the address.
     #[arg(long)]
-    pub from_mnemonic: bool,
+    pub use_mnemonic: bool,
 
-    /// Derivation path to use when generating a mnemonic phrase address.
+    /// Derivation path for mnemonic-based address generation.
     #[arg(long, default_value = "m/44'/60'/0'/0/0")]
     pub derivation_path: String,
 
-    /// Number of mnemonic words to use when generating a mnemonic phrase address.
-    #[arg(short, long, value_parser = parse_word_count)]
+    /// Number of words in the mnemonic (12, 15, 18, 21, or 24).
+    #[arg(long, value_parser = parse_mnemonic_word_count)]
     pub mnemonic_words: Option<usize>,
 
-    /// Address format HEX(Ethereum Conflux eSpace) or BASE32 (Conflux core space) default HEX
+    /// Address format: HEX (default) or BASE32.
     #[arg(long, default_value = "HEX")]
     pub address_format: AddressFormat,
 
     /// If you want to use base32 for Conflux core space, you need to specify the network id
     /// mainnet: 1029 testnet: 1028 default: 1029
     #[arg(long, default_value = "1029")]
-    pub cfx_network: u32,
+    pub cfx_network_id: u32,
 }
 
-const MIN_NB_WORDS: usize = 12;
-const MAX_NB_WORDS: usize = 24;
+const MIN_MNEMONIC_WORDS: usize = 12;
+const MAX_MNEMONIC_WORDS: usize = 24;
 
-fn parse_word_count(word_count: &str) -> Result<usize, String> {
-    let word_count: usize = word_count
+/// Validates the mnemonic word count.
+fn parse_mnemonic_word_count(s: &str) -> Result<usize, String> {
+    let count: usize = s
         .parse()
         .map_err(|_| "Word count must be a number".to_string())?;
 
-    if word_count < MIN_NB_WORDS || word_count % 3 != 0 || word_count > MAX_NB_WORDS {
-        Err(format!(
-            "Word count must be between {} and {}, and must be a multiple of 3",
-            MIN_NB_WORDS, MAX_NB_WORDS
-        ))
+    if count >= MIN_MNEMONIC_WORDS && count <= MAX_MNEMONIC_WORDS && count % 3 == 0 {
+        Ok(count)
     } else {
-        Ok(word_count)
+        Err(format!(
+            "Word count must be 12, 15, 18, 21, or 24. Got {}",
+            count
+        ))
     }
 }

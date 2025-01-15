@@ -92,9 +92,9 @@ fn main() {
         let attempt_count_clone = attempt_count.clone();
 
         let derivation_path = args.derivation_path.clone();
-        let from_private_key = args.from_private_key.clone();
+        let from_private_key = args.use_private_key.clone();
         let address_format = args.address_format.clone();
-        let network = args.cfx_network.clone();
+        let network = args.cfx_network_id.clone();
 
         let validator = validator::AddressValidator::new(
             args.contains.clone(),
