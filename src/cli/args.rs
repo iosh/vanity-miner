@@ -64,4 +64,8 @@ pub struct Args {
     /// Conflux network ID for address generation.
     #[arg(long, short = 'n', default_value = "1029")]
     pub cfx_network: u32,
+
+    /// Output CSV file path for storing found addresses and keys.
+    #[arg(long, short = 'o', default_value = "vanity-addresses.csv")]
+    pub output_file: String,
 }

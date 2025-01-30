@@ -42,6 +42,8 @@ Options:
           - 1029: Mainnet
           - 1: Testnet
           - Other: Custom network
+  -o, --output-file <OUTPUT_FILE>
+          Output CSV file path [default: vanity-addresses.csv]
   -h, --help
           Print help
   -V, --version
@@ -72,7 +74,7 @@ vanity-miner --use-mnemonic --mnemonic-words 12 --prefix 0000
 1. Generate address from a private key:
 
 ```bash
-vanity-miner --use-private-key --max-attempts 10000000 --limit 100 --threads 4 --prefix 0000
+vanity-miner --use-private-key --max-attempts 10000000 --limit 100 --threads 4 --prefix 0000 --output-file eth_addresses.csv
 ```
 
 This command will:
@@ -80,11 +82,13 @@ This command will:
 - Attempt up to 10,000,000 addresses (--max-attempts 10000000)
 - Return up to 100 matches (--limit 100)
 - Find addresses starting with "0000" (--prefix 0000)
+- Save results to eth_addresses.csv file (--output-file eth_addresses.csv)
 
-Output example:
-```
-found address: 0x0000d5b34d86f06659412c30143840e14b106c52, secret: f625874f4f8ebf2a8c3deafd705d0fdd45b12e4fc16c590164911b3d3db619e9
-found address: 0x000007f94cc0e698a3a0388a038d8cc2fcc161e5, secret: d4fea502a8d6442257b0e879ac85e9109bd67b73df910bcb5b9cae059b705d82
+CSV file content example:
+```csv
+address,private_key
+0x0000d5b34d86f06659412c30143840e14b106c52,f625874f4f8ebf2a8c3deafd705d0fdd45b12e4fc16c590164911b3d3db619e9
+0x000007f94cc0e698a3a0388a038d8cc2fcc161e5,d4fea502a8d6442257b0e879ac85e9109bd67b73df910bcb5b9cae059b705d82
 ```
 
 2. Generate address from a mnemonic:
@@ -142,6 +146,13 @@ vanity-miner --use-private-key --address-format BASE32 --cfx-network 1  # Use te
 ### Performance Note
 
 Generating addresses from a private key is significantly faster than generating from a mnemonic (approximately 32 times faster based on tests with an i5-12500H CPU).
+
+### File Output
+
+Program automatically saves found addresses to CSV file:
+- Default save to current directory `vanity-addresses.csv`
+- Use `-o` or `--output-file` to specify custom output file path
+- CSV file contains addresses and corresponding private key/mnemonic
 
 ### Disclaimer
 

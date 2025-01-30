@@ -5,11 +5,13 @@ mod stats;
 mod validator;
 
 use clap::Parser;
+use csv::Writer;
 use generator::AddressGenerator;
 use num_cpus;
 use stats::MiningStats;
 
 use std::{
+    path::Path,
     sync::{atomic::Ordering, mpsc, Arc},
     thread,
 };
@@ -27,9 +29,20 @@ fn main() {
 
     let (tx, rx) = mpsc::channel();
 
+    let output_path = Path::new(&args.output_file);
+
+    let mut csv_writer = Writer::from_path(&output_path).expect("create csv file failed");
+
+    csv_writer
+        .write_record(&["address", "secret"])
+        .expect("write csv header failed");
+
     let result_handle = thread::spawn(move || {
-        for (addr, pk) in rx {
-            println!("found address: {}, secret: {}", addr, pk);
+        for (addr, secret) in rx {
+            csv_writer
+                .write_record(&[&addr, &secret])
+                .expect("write csv record failed");
+            csv_writer.flush().expect("flush csv writer failed");
         }
     });
 
@@ -51,21 +64,25 @@ fn main() {
         } else {
             validator
         };
+
         let validator = if let Some(prefix) = args.prefix.clone() {
             validator.with_prefix(prefix)
         } else {
             validator
         };
+
         let validator = if let Some(suffix) = args.suffix.clone() {
             validator.with_suffix(suffix)
         } else {
             validator
         };
+
         let validator = if let Some(regex) = args.regex.clone() {
             validator.with_regex(regex)
         } else {
             validator
         };
+
         let validator = validator.build();
 
         let handle = thread::spawn(move || {
