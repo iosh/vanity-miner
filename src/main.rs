@@ -41,9 +41,9 @@ fn main() {
         let stats = stats.clone();
 
         let derivation_path = args.derivation_path.clone();
-        let from_private_key = args.use_private_key.clone();
+        let from_private_key = args.use_private_key;
         let address_format = args.address_format.clone();
-        let network = args.cfx_network_id.clone();
+        let network = args.cfx_network.clone();
 
         let validator = validator::ValidatorBuilder::new();
         let validator = if let Some(contains) = args.contains.clone() {
