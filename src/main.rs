@@ -1,10 +1,10 @@
 mod address;
-mod address_generator;
 mod cli;
+mod generator;
 mod validator;
 
-use address_generator::AddressGenerator;
 use clap::Parser;
+use generator::AddressGenerator;
 use num_cpus;
 
 use std::{
@@ -104,8 +104,14 @@ fn main() {
         );
 
         let handle = thread::spawn(move || {
-            let address_generator =
-                AddressGenerator::new(from_private_key, derivation_path, validator, address_format);
+            let address_generator = if from_private_key {
+                AddressGenerator::private_key()
+            } else {
+                AddressGenerator::mnemonic(derivation_path)
+            }
+            .with_format(address_format)
+            .with_validator(validator)
+            .build();
 
             loop {
                 if (max_attempts > 0 && attempt_count_clone.load(RELAXED) >= max_attempts)

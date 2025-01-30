@@ -1,6 +1,6 @@
 use clap::{ArgGroup, Parser};
 
-use crate::address_generator::AddressFormat;
+use crate::generator::types::AddressFormat;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

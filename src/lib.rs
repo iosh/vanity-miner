@@ -1,3 +1,3 @@
 pub mod address;
-pub mod address_generator;
+pub mod generator;
 pub mod validator;

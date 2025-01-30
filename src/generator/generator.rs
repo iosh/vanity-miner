@@ -8,15 +8,18 @@ use crate::{
     validator::AddressValidator,
 };
 
+use super::types::AddressFormat;
+
 pub struct AddressGenerator {
-    pub use_private_key: bool,
-    pub derivation_path: DerivationPath,
-    pub address_format: AddressFormat,
-    pub validator: AddressValidator,
+    use_private_key: bool,
+    derivation_path: DerivationPath,
+    address_format: AddressFormat,
+    validator: AddressValidator,
 }
 
 impl AddressGenerator {
-    pub fn new(
+    // Constructor is now primarily used by the builder
+    pub(crate) fn new(
         use_private_key: bool,
         derivation_path: String,
         validator: AddressValidator,
@@ -29,6 +32,16 @@ impl AddressGenerator {
             address_format,
         }
     }
+
+    // Static methods to create builder
+    pub fn private_key() -> super::builder::GeneratorBuilder {
+        super::builder::GeneratorBuilder::new().with_private_key()
+    }
+
+    pub fn mnemonic(path: String) -> super::builder::GeneratorBuilder {
+        super::builder::GeneratorBuilder::new().with_mnemonic(path)
+    }
+
     pub fn new_random_address(&self, net: u32) -> Option<(String, String)> {
         let (address, secret) = self.generate_address_and_secret(net);
 
@@ -61,25 +74,11 @@ impl AddressGenerator {
             (address, mnemonic_account.mnemonic.to_string())
         }
     }
+
     fn format_address(&self, address: &Address, net: u32) -> String {
         match self.address_format {
             AddressFormat::HEX => address.hex_address(),
             AddressFormat::BASE32 => address.base32_address(net),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum AddressFormat {
-    HEX,
-    BASE32,
-}
-
-impl From<&str> for AddressFormat {
-    fn from(s: &str) -> Self {
-        match s.to_uppercase().as_str() {
-            "BASE32" => AddressFormat::BASE32,
-            _ => AddressFormat::HEX,
         }
     }
 }
