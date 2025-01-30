@@ -1,7 +1,10 @@
 use bip32::DerivationPath;
 
 use crate::{
-    address::{Address, MnemonicAccount, PrivateKeyAccount},
+    address::{
+        account::{MnemonicAccount, PrivateKeyAccount},
+        encoding::Address,
+    },
     validator::AddressValidator,
 };
 

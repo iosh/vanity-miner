@@ -1,53 +1,9 @@
-use bip32::{DerivationPath, XPrv};
-use bip39::Mnemonic;
-use secp256k1::rand::rngs::ThreadRng;
-use secp256k1::{Secp256k1, SecretKey};
 use sha3::{Digest, Keccak256};
 
 pub type EthereumAddressBytes = [u8; 20];
 
 pub struct Address {
     address: EthereumAddressBytes,
-}
-
-pub struct PrivateKeyAccount {
-    pub secret_key: SecretKey,
-    pub address: Address,
-}
-
-pub struct MnemonicAccount {
-    pub mnemonic: String,
-    pub address: Address,
-}
-
-impl MnemonicAccount {
-    pub fn from_random_mnemonic(word_count: usize, path: &DerivationPath) -> Self {
-        let mnemonic = Mnemonic::generate(word_count).unwrap();
-        let seed = mnemonic.to_seed("");
-
-        let private_key = XPrv::derive_from_path(&seed, path).unwrap();
-
-        let public_key = private_key
-            .public_key()
-            .public_key()
-            .to_encoded_point(false);
-        MnemonicAccount {
-            mnemonic: mnemonic.to_string(),
-            address: Address::from_public_key(&public_key.as_bytes()),
-        }
-    }
-}
-
-impl PrivateKeyAccount {
-    pub fn from_random_private_key() -> Self {
-        let secp = Secp256k1::new();
-        let (secret_key, public_key) = secp.generate_keypair(&mut ThreadRng::default());
-
-        PrivateKeyAccount {
-            secret_key,
-            address: Address::from_public_key(&public_key.serialize_uncompressed()),
-        }
-    }
 }
 
 const CHARSET: &[u8] = b"abcdefghjkmnprstuvwxyz0123456789";
@@ -172,6 +128,8 @@ fn calculate_checksum(data: &[u8]) -> u64 {
 }
 #[cfg(test)]
 mod tests {
+    use crate::address::account::{MnemonicAccount, PrivateKeyAccount};
+
     use super::*;
 
     #[test]
