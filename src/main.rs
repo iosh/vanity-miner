@@ -1,36 +1,20 @@
 mod address;
 mod cli;
 mod generator;
+mod stats;
 mod validator;
 
 use clap::Parser;
 use generator::AddressGenerator;
 use num_cpus;
+use stats::MiningStats;
 
 use std::{
-    sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
-        mpsc, Arc,
-    },
+    sync::{atomic::Ordering, mpsc, Arc},
     thread,
-    time::{Duration, Instant},
 };
 
 static RELAXED: Ordering = Ordering::Relaxed;
-
-struct Status {
-    last_attempt: u64,
-    last_time: Instant,
-}
-
-impl Status {
-    fn new() -> Self {
-        Status {
-            last_attempt: 0,
-            last_time: Instant::now(),
-        }
-    }
-}
 
 fn main() {
     let args = cli::Args::parse();
@@ -39,15 +23,9 @@ fn main() {
 
     let max_attempts = args.max_attempts.unwrap_or(0);
     let limit = args.limit.unwrap_or(0);
-    let found_count = Arc::new(AtomicU64::new(0));
-    let attempt_count = Arc::new(AtomicU64::new(0));
+    let stats = Arc::new(MiningStats::new());
 
     let (tx, rx) = mpsc::channel();
-
-    let attempt_count_clone = attempt_count.clone();
-    let found_count_clone = found_count.clone();
-
-    let status_thread_running = Arc::new(AtomicBool::new(true));
 
     let result_handle = thread::spawn(move || {
         for (addr, pk) in rx {
@@ -55,41 +33,12 @@ fn main() {
         }
     });
 
-    let status_thread_running_clone = status_thread_running.clone();
-
-    let stats_handle = thread::spawn(move || {
-        let mut status = Status::new();
-
-        loop {
-            thread::sleep(Duration::from_secs(1));
-
-            if !status_thread_running_clone.load(RELAXED) {
-                break;
-            }
-
-            let current_attempt = attempt_count_clone.load(RELAXED);
-            let current_found = found_count_clone.load(RELAXED);
-
-            let elapsed = status.last_time.elapsed();
-            let attempts_per_second =
-                (current_attempt - status.last_attempt) as u64 / elapsed.as_secs();
-
-            println!(
-                "Speed: {:} addresses/s, Total attempts: {}, Total found: {}",
-                attempts_per_second, current_attempt, current_found
-            );
-
-            // Update status
-            status.last_attempt = current_attempt;
-            status.last_time = Instant::now();
-        }
-    });
+    let mut stats_reporter = stats::StatsReporter::new(stats.clone());
+    stats_reporter.start();
 
     for _ in 0..num_threads {
         let tx_clone = tx.clone();
-
-        let found_count_clone = found_count.clone();
-        let attempt_count_clone = attempt_count.clone();
+        let stats = stats.clone();
 
         let derivation_path = args.derivation_path.clone();
         let from_private_key = args.use_private_key.clone();
@@ -130,18 +79,18 @@ fn main() {
             .build();
 
             loop {
-                if (max_attempts > 0 && attempt_count_clone.load(RELAXED) >= max_attempts)
-                    || (limit > 0 && found_count_clone.load(RELAXED) >= limit)
+                if (max_attempts > 0 && stats.attempt_count.load(RELAXED) >= max_attempts)
+                    || (limit > 0 && stats.found_count.load(RELAXED) >= limit)
                 {
                     break;
                 }
 
                 if let Some((addr, secret)) = address_generator.new_random_address(network) {
                     tx_clone.send((addr, secret)).unwrap();
-                    found_count_clone.fetch_add(1, RELAXED);
+                    stats.increment_found();
                 }
 
-                attempt_count_clone.fetch_add(1, RELAXED);
+                stats.increment_attempt();
             }
         });
 
@@ -152,12 +101,12 @@ fn main() {
         handle.join().unwrap();
     }
     drop(tx);
-    status_thread_running.store(false, RELAXED);
 
-    stats_handle.join().unwrap();
+    let final_stats = stats.get_snapshot();
+    stats_reporter.stop();
     result_handle.join().unwrap();
 
     println!("Done");
-    println!("Found: {}", found_count.load(RELAXED));
-    println!("Attempts: {}", attempt_count.load(RELAXED));
+    println!("Found: {}", final_stats.found);
+    println!("Attempts: {}", final_stats.attempts);
 }
