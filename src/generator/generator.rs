@@ -5,7 +5,7 @@ use crate::{
         account::{MnemonicAccount, PrivateKeyAccount},
         encoding::Address,
     },
-    validator::AddressValidator,
+    validator::validator::AddressValidator,
 };
 
 use super::types::AddressFormat;

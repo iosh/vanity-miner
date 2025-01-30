@@ -96,12 +96,28 @@ fn main() {
         let address_format = args.address_format.clone();
         let network = args.cfx_network_id.clone();
 
-        let validator = validator::AddressValidator::new(
-            args.contains.clone(),
-            args.prefix.clone(),
-            args.suffix.clone(),
-            args.regex.clone(),
-        );
+        let validator = validator::ValidatorBuilder::new();
+        let validator = if let Some(contains) = args.contains.clone() {
+            validator.with_contains(contains)
+        } else {
+            validator
+        };
+        let validator = if let Some(prefix) = args.prefix.clone() {
+            validator.with_prefix(prefix)
+        } else {
+            validator
+        };
+        let validator = if let Some(suffix) = args.suffix.clone() {
+            validator.with_suffix(suffix)
+        } else {
+            validator
+        };
+        let validator = if let Some(regex) = args.regex.clone() {
+            validator.with_regex(regex)
+        } else {
+            validator
+        };
+        let validator = validator.build();
 
         let handle = thread::spawn(move || {
             let address_generator = if from_private_key {

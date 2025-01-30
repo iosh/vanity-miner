@@ -1,6 +1,7 @@
 use sha3::{Digest, Keccak256};
-
+use crate::address::network::ConfluxNetwork;
 pub type EthereumAddressBytes = [u8; 20];
+
 
 pub struct Address {
     address: EthereumAddressBytes,
@@ -40,11 +41,7 @@ impl Address {
         }
 
         // 确定前缀
-        let prefix = match network {
-            1 => "cfxtest",
-            1029 => "cfx",
-            _ => &format!("net{}", network),
-        };
+        let prefix = ConfluxNetwork::from_u32(network).to_str();
 
         let mut payload = Vec::with_capacity(1 + modified_address.len());
         payload.push(VERSION_BYTE);
