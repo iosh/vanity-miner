@@ -8,20 +8,53 @@ use clap::Parser;
 use csv::Writer;
 use generator::AddressGenerator;
 use num_cpus;
+use rayon::prelude::*;
 use stats::MiningStats;
 
 use std::{
+    fs::{File, OpenOptions},
+    io,
     path::Path,
     sync::{atomic::Ordering, mpsc, Arc},
     thread,
 };
 
+// Threshold for updating global atomic counters to reduce contention
+const LOCAL_COUNTER_THRESHOLD: u64 = 1000;
+
 static RELAXED: Ordering = Ordering::Relaxed;
+
+// Initialize CSV writer with proper error handling
+fn init_csv_writer(path: &Path) -> io::Result<Writer<File>> {
+    // Check if file exists and has content
+    let file_exists = path.exists() && path.metadata()?.len() > 0;
+    
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open(path)?;
+    
+    let mut writer = Writer::from_writer(file);
+    
+    // Only write header if file is new or empty
+    if !file_exists {
+        writer.write_record(&["address", "secret"])?;
+        writer.flush()?;
+    }
+    
+    Ok(writer)
+}
 
 fn main() {
     let args = cli::Args::parse();
     let num_threads = args.threads.unwrap_or(num_cpus::get());
-    let mut handles = vec![];
+    
+    // Initialize rayon's thread pool with specified number of threads
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build_global()
+        .unwrap();
 
     let max_attempts = args.max_attempts.unwrap_or(0);
     let limit = args.limit.unwrap_or(0);
@@ -30,93 +63,111 @@ fn main() {
     let (tx, rx) = mpsc::channel();
 
     let output_path = Path::new(&args.output_file);
+    
+    // Initialize CSV writer with error handling
+    let mut csv_writer = init_csv_writer(output_path).unwrap_or_else(|e| {
+        eprintln!("Failed to initialize CSV writer: {}", e);
+        std::process::exit(1);
+    });
 
-    let mut csv_writer = Writer::from_path(&output_path).expect("create csv file failed");
-
-    csv_writer
-        .write_record(&["address", "secret"])
-        .expect("write csv header failed");
-
+    // Result writer thread with improved error handling
     let result_handle = thread::spawn(move || {
         for (addr, secret) in rx {
-            csv_writer
-                .write_record(&[&addr, &secret])
-                .expect("write csv record failed");
-            csv_writer.flush().expect("flush csv writer failed");
+            if let Err(e) = csv_writer.write_record(&[&addr, &secret]) {
+                eprintln!("Failed to write record: {}", e);
+                continue;
+            }
+            if let Err(e) = csv_writer.flush() {
+                eprintln!("Failed to flush writer: {}", e);
+            }
         }
     });
 
     let mut stats_reporter = stats::StatsReporter::new(stats.clone());
     stats_reporter.start();
 
-    for _ in 0..num_threads {
-        let tx_clone = tx.clone();
-        let stats = stats.clone();
+    let worker_configs: Vec<_> = (0..num_threads)
+        .map(|_| {
+            let tx = tx.clone();
+            let stats = stats.clone();
+            let derivation_path = args.derivation_path.clone();
+            let from_private_key = args.use_private_key;
+            let address_format = args.address_format.clone();
+            let network = args.cfx_network.clone();
 
-        let derivation_path = args.derivation_path.clone();
-        let from_private_key = args.use_private_key;
-        let address_format = args.address_format.clone();
-        let network = args.cfx_network.clone();
-
-        let validator = validator::ValidatorBuilder::new();
-        let validator = if let Some(contains) = args.contains.clone() {
-            validator.with_contains(contains)
-        } else {
-            validator
-        };
-
-        let validator = if let Some(prefix) = args.prefix.clone() {
-            validator.with_prefix(prefix)
-        } else {
-            validator
-        };
-
-        let validator = if let Some(suffix) = args.suffix.clone() {
-            validator.with_suffix(suffix)
-        } else {
-            validator
-        };
-
-        let validator = if let Some(regex) = args.regex.clone() {
-            validator.with_regex(regex)
-        } else {
-            validator
-        };
-
-        let validator = validator.build();
-
-        let handle = thread::spawn(move || {
-            let address_generator = if from_private_key {
-                AddressGenerator::private_key()
-            } else {
-                AddressGenerator::mnemonic(derivation_path)
-            }
-            .with_format(address_format)
-            .with_validator(validator)
-            .build();
-
-            loop {
-                if (max_attempts > 0 && stats.attempt_count.load(RELAXED) >= max_attempts)
-                    || (limit > 0 && stats.found_count.load(RELAXED) >= limit)
-                {
-                    break;
+            let validator = {
+                let mut builder = validator::ValidatorBuilder::new();
+                if let Some(contains) = args.contains.clone() {
+                    builder = builder.with_contains(contains);
                 }
-
-                if let Some((addr, secret)) = address_generator.new_random_address(network) {
-                    tx_clone.send((addr, secret)).unwrap();
-                    stats.increment_found();
+                if let Some(prefix) = args.prefix.clone() {
+                    builder = builder.with_prefix(prefix);
                 }
+                if let Some(suffix) = args.suffix.clone() {
+                    builder = builder.with_suffix(suffix);
+                }
+                if let Some(regex) = args.regex.clone() {
+                    builder = builder.with_regex(regex);
+                }
+                builder.build()
+            };
 
-                stats.increment_attempt();
+            (tx, stats, from_private_key, derivation_path, address_format, network, validator)
+        })
+        .collect();
+
+    worker_configs.into_par_iter().for_each(|(tx, stats, from_private_key, derivation_path, address_format, network, validator)| {
+        let address_generator = if from_private_key {
+            AddressGenerator::private_key()
+        } else {
+            AddressGenerator::mnemonic(derivation_path)
+        }
+        .with_format(address_format)
+        .with_validator(validator)
+        .build();
+
+        // 本地计数器
+        let mut local_attempt_count = 0u64;
+        let mut local_found_count = 0u64;
+
+        loop {
+            // Check global limits using relaxed ordering
+            let global_attempts = stats.attempt_count.load(RELAXED);
+            let global_found = stats.found_count.load(RELAXED);
+
+            if (max_attempts > 0 && global_attempts + local_attempt_count >= max_attempts)
+                || (limit > 0 && global_found + local_found_count >= limit)
+            {
+                // Update global counters before exit
+                if local_attempt_count > 0 {
+                    stats.attempt_count.fetch_add(local_attempt_count, RELAXED);
+                }
+                if local_found_count > 0 {
+                    stats.found_count.fetch_add(local_found_count, RELAXED);
+                }
+                break;
             }
-        });
 
-        handles.push(handle);
-    }
+            if let Some((addr, secret)) = address_generator.new_random_address(network) {
+                // Send result immediately since finding addresses is rare
+                tx.send((addr, secret)).unwrap();
+                local_found_count += 1;
+                
+                // Update global found counter immediately for accurate progress tracking
+                if local_found_count > 0 {
+                    stats.found_count.fetch_add(local_found_count, RELAXED);
+                    local_found_count = 0;
+                }
+            }
 
-    for handle in handles {
-        handle.join().unwrap();
-    }
+            local_attempt_count += 1;
+            if local_attempt_count >= LOCAL_COUNTER_THRESHOLD {
+                stats.attempt_count.fetch_add(local_attempt_count, RELAXED);
+                local_attempt_count = 0;
+            }
+        }
+    });
+
     drop(tx);
 
     let final_stats = stats.get_snapshot();

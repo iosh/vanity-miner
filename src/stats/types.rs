@@ -22,14 +22,6 @@ impl MiningStats {
         }
     }
 
-    pub fn increment_attempt(&self) {
-        self.attempt_count.fetch_add(1, RELAXED);
-    }
-
-    pub fn increment_found(&self) {
-        self.found_count.fetch_add(1, RELAXED);
-    }
-
     pub fn get_snapshot(&self) -> StatsSnapshot {
         StatsSnapshot {
             attempts: self.attempt_count.load(RELAXED),
@@ -60,4 +52,4 @@ impl StatsSnapshot {
         }
         (self.attempts - previous.attempts) / elapsed
     }
-} 
+}

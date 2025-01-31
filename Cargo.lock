@@ -1088,6 +1088,7 @@ dependencies = [
  "hex",
  "indicatif",
  "num_cpus",
+ "rayon",
  "regex",
  "secp256k1",
  "sha3",
