@@ -126,7 +126,6 @@ fn main() {
         .with_validator(validator)
         .build();
 
-        // 本地计数器
         let mut local_attempt_count = 0u64;
         let mut local_found_count = 0u64;
 

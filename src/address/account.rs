@@ -1,7 +1,7 @@
 use bip32::{DerivationPath, XPrv};
 use bip39::Mnemonic;
 use secp256k1::rand::rngs::ThreadRng;
-use secp256k1::{Secp256k1, SecretKey};
+use secp256k1::{generate_keypair, SecretKey};
 
 use super::encoding::Address;
 
@@ -35,8 +35,7 @@ impl MnemonicAccount {
 
 impl PrivateKeyAccount {
     pub fn from_random_private_key() -> Self {
-        let secp = Secp256k1::new();
-        let (secret_key, public_key) = secp.generate_keypair(&mut ThreadRng::default());
+        let (secret_key, public_key) = generate_keypair(&mut ThreadRng::default());
 
         PrivateKeyAccount {
             secret_key,
