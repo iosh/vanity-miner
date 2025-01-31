@@ -1,3 +1,5 @@
+use regex::Regex;
+
 use super::{types::ValidatorType, validator::AddressValidator};
 
 #[derive(Default)]
@@ -28,7 +30,9 @@ impl ValidatorBuilder {
     }
 
     pub fn with_regex(mut self, pattern: String) -> Self {
-        self.validators.push(ValidatorType::Regex(pattern));
+        self.validators.push(ValidatorType::Regex(Box::new(
+            Regex::new(&pattern).unwrap(),
+        )));
         self
     }
 
@@ -58,4 +62,4 @@ mod tests {
             .build();
         assert!(validator.validate("1237890000000000000000000000000000000456"));
     }
-} 
+}

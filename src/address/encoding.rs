@@ -40,7 +40,6 @@ impl Address {
             modified_address[0] = (modified_address[0] & LOW_NIBBLE_MASK) | FIXED_HIGH_NIBBLE;
         }
 
-        // 确定前缀
         let prefix = ConfluxNetwork::from_u32(network).to_str();
 
         let mut payload = Vec::with_capacity(1 + modified_address.len());

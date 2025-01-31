@@ -17,6 +17,8 @@ impl AddressValidator {
 
 #[cfg(test)]
 mod tests {
+    use regex::Regex;
+
     use super::*;
 
     #[test]
@@ -46,7 +48,9 @@ mod tests {
 
     #[test]
     fn test_regex_validate() {
-        let validator = AddressValidator::new(vec![ValidatorType::Regex("0{10}".to_string())]);
+        let validator = AddressValidator::new(vec![ValidatorType::Regex(Box::new(
+            Regex::new("0{10}").unwrap(),
+        ))]);
         assert!(validator.validate("0000000000111111111111111111111111111111"));
         assert!(!validator.validate("1110000000111111111111111111111111111111"));
     }
@@ -61,4 +65,4 @@ mod tests {
         assert!(!validator.validate("1230000000000000000000000000000000000000"));
         assert!(!validator.validate("0000000000000000000000000000000000000456"));
     }
-} 
+}

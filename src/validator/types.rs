@@ -1,9 +1,11 @@
+use regex::Regex;
+
 #[derive(Debug, Clone)]
 pub enum ValidatorType {
     Prefix(String),
     Suffix(String),
     Contains(Vec<String>),
-    Regex(String),
+    Regex(Box<Regex>),
 }
 
 impl ValidatorType {
@@ -12,13 +14,7 @@ impl ValidatorType {
             ValidatorType::Prefix(prefix) => address.starts_with(prefix),
             ValidatorType::Suffix(suffix) => address.ends_with(suffix),
             ValidatorType::Contains(patterns) => patterns.iter().any(|p| address.contains(p)),
-            ValidatorType::Regex(pattern) => {
-                if let Ok(regex) = regex::Regex::new(pattern) {
-                    regex.is_match(address)
-                } else {
-                    false
-                }
-            }
+            ValidatorType::Regex(regex) => regex.is_match(address),
         }
     }
-} 
+}
