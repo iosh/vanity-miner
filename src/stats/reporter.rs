@@ -32,7 +32,7 @@ impl StatsReporter {
 
         let handle = thread::spawn(move || {
             let multi = MultiProgress::new();
-            
+
             let speed_pb = multi.add(ProgressBar::new_spinner());
             speed_pb.set_style(
                 ProgressStyle::default_spinner()

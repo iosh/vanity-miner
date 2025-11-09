@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use vanity_miner::{
-    generator::{AddressGenerator, AddressFormat},
+    generator::{AddressFormat, AddressGenerator},
     validator::ValidatorBuilder,
 };
 

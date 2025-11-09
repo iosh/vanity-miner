@@ -1,5 +1,5 @@
-pub mod types;
 pub mod reporter;
+pub mod types;
 
 pub use reporter::StatsReporter;
-pub use types::{MiningStats, StatsSnapshot}; 
+pub use types::{MiningStats, StatsSnapshot};

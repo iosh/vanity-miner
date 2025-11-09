@@ -28,28 +28,28 @@ static RELAXED: Ordering = Ordering::Relaxed;
 fn init_csv_writer(path: &Path) -> io::Result<Writer<File>> {
     // Check if file exists and has content
     let file_exists = path.exists() && path.metadata()?.len() > 0;
-    
+
     let file = OpenOptions::new()
         .write(true)
         .create(true)
         .append(true)
         .open(path)?;
-    
+
     let mut writer = Writer::from_writer(file);
-    
+
     // Only write header if file is new or empty
     if !file_exists {
         writer.write_record(&["address", "secret"])?;
         writer.flush()?;
     }
-    
+
     Ok(writer)
 }
 
 fn main() {
     let args = cli::Args::parse();
     let num_threads = args.threads.unwrap_or(num_cpus::get());
-    
+
     // Initialize rayon's thread pool with specified number of threads
     rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)
@@ -63,7 +63,7 @@ fn main() {
     let (tx, rx) = mpsc::channel();
 
     let output_path = Path::new(&args.output_file);
-    
+
     // Initialize CSV writer with error handling
     let mut csv_writer = init_csv_writer(output_path).unwrap_or_else(|e| {
         eprintln!("Failed to initialize CSV writer: {}", e);
@@ -112,60 +112,70 @@ fn main() {
                 builder.build()
             };
 
-            (tx, stats, from_private_key, derivation_path, address_format, network, validator)
+            (
+                tx,
+                stats,
+                from_private_key,
+                derivation_path,
+                address_format,
+                network,
+                validator,
+            )
         })
         .collect();
 
-    worker_configs.into_par_iter().for_each(|(tx, stats, from_private_key, derivation_path, address_format, network, validator)| {
-        let address_generator = if from_private_key {
-            AddressGenerator::private_key()
-        } else {
-            AddressGenerator::mnemonic(derivation_path)
-        }
-        .with_format(address_format)
-        .with_validator(validator)
-        .build();
+    worker_configs.into_par_iter().for_each(
+        |(tx, stats, from_private_key, derivation_path, address_format, network, validator)| {
+            let address_generator = if from_private_key {
+                AddressGenerator::private_key()
+            } else {
+                AddressGenerator::mnemonic(derivation_path)
+            }
+            .with_format(address_format)
+            .with_validator(validator)
+            .build();
 
-        let mut local_attempt_count = 0u64;
-        let mut local_found_count = 0u64;
+            let mut local_attempt_count = 0u64;
+            let mut local_found_count = 0u64;
 
-        loop {
-            // Check global limits using relaxed ordering
-            let global_attempts = stats.attempt_count.load(RELAXED);
-            let global_found = stats.found_count.load(RELAXED);
+            loop {
+                // Check global limits using relaxed ordering
+                let global_attempts = stats.attempt_count.load(RELAXED);
+                let global_found = stats.found_count.load(RELAXED);
 
-            if (max_attempts > 0 && global_attempts + local_attempt_count >= max_attempts)
-                || (limit > 0 && global_found + local_found_count >= limit)
-            {
-                // Update global counters before exit
-                if local_attempt_count > 0 {
+                if (max_attempts > 0 && global_attempts + local_attempt_count >= max_attempts)
+                    || (limit > 0 && global_found + local_found_count >= limit)
+                {
+                    // Update global counters before exit
+                    if local_attempt_count > 0 {
+                        stats.attempt_count.fetch_add(local_attempt_count, RELAXED);
+                    }
+                    if local_found_count > 0 {
+                        stats.found_count.fetch_add(local_found_count, RELAXED);
+                    }
+                    break;
+                }
+
+                if let Some((addr, secret)) = address_generator.new_random_address(network) {
+                    // Send result immediately since finding addresses is rare
+                    tx.send((addr, secret)).unwrap();
+                    local_found_count += 1;
+
+                    // Update global found counter immediately for accurate progress tracking
+                    if local_found_count > 0 {
+                        stats.found_count.fetch_add(local_found_count, RELAXED);
+                        local_found_count = 0;
+                    }
+                }
+
+                local_attempt_count += 1;
+                if local_attempt_count >= LOCAL_COUNTER_THRESHOLD {
                     stats.attempt_count.fetch_add(local_attempt_count, RELAXED);
-                }
-                if local_found_count > 0 {
-                    stats.found_count.fetch_add(local_found_count, RELAXED);
-                }
-                break;
-            }
-
-            if let Some((addr, secret)) = address_generator.new_random_address(network) {
-                // Send result immediately since finding addresses is rare
-                tx.send((addr, secret)).unwrap();
-                local_found_count += 1;
-                
-                // Update global found counter immediately for accurate progress tracking
-                if local_found_count > 0 {
-                    stats.found_count.fetch_add(local_found_count, RELAXED);
-                    local_found_count = 0;
+                    local_attempt_count = 0;
                 }
             }
-
-            local_attempt_count += 1;
-            if local_attempt_count >= LOCAL_COUNTER_THRESHOLD {
-                stats.attempt_count.fetch_add(local_attempt_count, RELAXED);
-                local_attempt_count = 0;
-            }
-        }
-    });
+        },
+    );
 
     drop(tx);
 

@@ -1,7 +1,6 @@
-use sha3::{Digest, Keccak256};
 use crate::address::network::ConfluxNetwork;
+use sha3::{Digest, Keccak256};
 pub type EthereumAddressBytes = [u8; 20];
-
 
 pub struct Address {
     address: EthereumAddressBytes,

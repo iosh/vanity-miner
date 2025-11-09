@@ -41,7 +41,9 @@ impl GeneratorBuilder {
     }
 
     pub fn build(self) -> AddressGenerator {
-        let derivation_path = self.derivation_path.unwrap_or_else(|| "m/44'/60'/0'/0/0".to_string());
+        let derivation_path = self
+            .derivation_path
+            .unwrap_or_else(|| "m/44'/60'/0'/0/0".to_string());
         let validator = self.validator.expect("Validator is required");
 
         AddressGenerator::new(
@@ -57,4 +59,4 @@ impl Default for GeneratorBuilder {
     fn default() -> Self {
         Self::new()
     }
-} 
+}
