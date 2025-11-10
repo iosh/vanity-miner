@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::chains::EthereumChain;
+
 use super::chain::Chain;
 use super::types::Result;
 use super::types::VanityError;
@@ -11,9 +13,13 @@ pub struct ChainProvider {
 
 impl ChainProvider {
     pub fn new() -> Self {
-        Self {
+        let mut provider = Self {
             chains: HashMap::new(),
-        }
+        };
+        provider
+            .register(Arc::new(EthereumChain::new()))
+            .expect("register Ethereum chain");
+        provider
     }
 
     pub fn register(&mut self, chain: Arc<dyn Chain>) -> Result<()> {
