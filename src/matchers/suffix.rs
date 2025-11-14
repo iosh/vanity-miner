@@ -29,7 +29,6 @@ impl Matcher for SuffixMatcher {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
