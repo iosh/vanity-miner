@@ -1,16 +1,3 @@
-mod address;
-mod cli;
-mod generator;
-mod stats;
-mod validator;
-
-use clap::Parser;
-use csv::Writer;
-use generator::AddressGenerator;
-use num_cpus;
-use rayon::prelude::*;
-use stats::MiningStats;
-
 use std::{
     fs::{File, OpenOptions},
     io,
@@ -18,6 +5,20 @@ use std::{
     sync::{atomic::Ordering, mpsc, Arc},
     thread,
 };
+
+use rayon::prelude::*;
+
+mod address;
+mod cli;
+mod generator;
+mod validator;
+
+use clap::Parser;
+use csv::Writer;
+use generator::AddressGenerator;
+use num_cpus;
+use vanity_miner::output::ConsoleStatsSink;
+use vanity_miner::stats::{MiningStats, StatsReporter};
 
 // Threshold for updating global atomic counters to reduce contention
 const LOCAL_COUNTER_THRESHOLD: u64 = 1000;
@@ -83,8 +84,9 @@ fn main() {
         }
     });
 
-    let mut stats_reporter = stats::StatsReporter::new(stats.clone());
-    stats_reporter.start();
+    let mut stats_reporter = StatsReporter::new(stats.clone());
+    let stats_sink = ConsoleStatsSink::new();
+    stats_reporter.start(Box::new(stats_sink));
 
     let worker_configs: Vec<_> = (0..num_threads)
         .map(|_| {

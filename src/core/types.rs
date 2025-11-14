@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use bip32::DerivationPath;
 use bip39::Mnemonic;
 use thiserror::Error;

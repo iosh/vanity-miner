@@ -1,5 +1,4 @@
 use crate::core::matcher::{DynMatcher, Matcher};
-use std::sync::Arc;
 
 /// Global combination logic for composite matchers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,6 +68,7 @@ impl Matcher for CompositeMatcher {
 mod tests {
     use super::*;
     use crate::core::matcher::Matcher;
+    use std::sync::Arc;
 
     #[derive(Debug)]
     struct Always(bool);
