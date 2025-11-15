@@ -91,11 +91,14 @@ pub struct StatsSnapshot {
 
 impl StatsSnapshot {
     pub fn calculate_speed(&self, previous: &StatsSnapshot) -> u64 {
-        let elapsed_secs = self.timestamp.duration_since(previous.timestamp).as_secs();
-        if elapsed_secs == 0 {
+        let elapsed = self.timestamp.duration_since(previous.timestamp);
+        let secs = elapsed.as_secs_f64();
+        if secs == 0.0 {
             return 0;
         }
-        (self.attempts.saturating_sub(previous.attempts)) / elapsed_secs
+
+        let attempts_delta = self.attempts.saturating_sub(previous.attempts) as f64;
+        (attempts_delta / secs).round() as u64
     }
 
     pub fn hashrate(&self) -> f64 {

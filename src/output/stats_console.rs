@@ -1,8 +1,10 @@
+use std::time::Duration;
+
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::stats::{StatsSink, StatsSnapshot};
 
-/// Console-based stats sink using `indicatif` spinners
+/// Console-based stats sink using a single spinner and global average speed.
 #[derive(Debug)]
 pub struct ConsoleStatsSink {
     progress: ProgressBar,
@@ -16,16 +18,22 @@ impl ConsoleStatsSink {
                 .unwrap(),
         );
 
+        progress.enable_steady_tick(Duration::from_millis(200));
+
         Self { progress }
     }
 }
 
 impl StatsSink for ConsoleStatsSink {
-    fn update(&mut self, current: &StatsSnapshot, previous: &StatsSnapshot) {
-        let speed = current.calculate_speed(previous);
+    fn update(&mut self, current: &StatsSnapshot, _previous: &StatsSnapshot) {
+        self.progress.tick();
+
+        // Global average speed from the beginning.
+        let avg_speed = current.hashrate();
+
         self.progress.set_message(format!(
-            "Speed: {} addresses/s | Total attempts: {} | Total found: {}",
-            speed, current.attempts, current.found
+            "Avg: {:.0} addr/s | Total attempts: {} | Total found: {}",
+            avg_speed, current.attempts, current.found
         ));
     }
 
