@@ -147,24 +147,16 @@ impl Chain for EthereumChain {
 
     fn derive_from_mnemonic(
         &self,
-        mnemonic: &str,
-        path: &str,
+        mnemonic: &Mnemonic,
+        path: &DerivationPath,
         rng: &mut dyn RngCore,
     ) -> Result<KeyPair> {
-        let mnemonic =
-            Mnemonic::parse(mnemonic).map_err(|e| VanityError::InvalidMnemonic(e.to_string()))?;
-
-        let derivation_path: DerivationPath = path
-            .parse()
-            .map_err(|e: bip32::Error| VanityError::InvalidDerivationPath(e.to_string()))?;
-
         let seed = mnemonic.to_seed("");
 
-        let xprv = XPrv::derive_from_path(seed, &derivation_path)
+        let xprv = XPrv::derive_from_path(seed, path)
             .map_err(|e| VanityError::CryptoError(e.to_string()))?;
 
         let child_key = xprv.private_key();
-
         let secret_bytes = child_key.to_bytes();
 
         let secret = SecretKey::from_slice(&secret_bytes)
@@ -175,8 +167,8 @@ impl Chain for EthereumChain {
         Ok(KeyPair::Secp256k1 {
             secret: secret.secret_bytes(),
             public,
-            mnemonic: Some(mnemonic),
-            derivation_path: Some(derivation_path),
+            mnemonic: Some(mnemonic.clone()),
+            derivation_path: Some(path.clone()),
         })
     }
 
@@ -239,6 +231,7 @@ impl Chain for EthereumChain {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bip32::DerivationPath;
     use hex::decode;
     use rand::{rngs::StdRng, SeedableRng};
 
@@ -367,12 +360,15 @@ mod tests {
     #[test]
     fn derive_from_mnemonic_matches_vector() {
         let chain = test_chain();
-        let mnemonic = "test test test test test test test test test test test junk";
-        let path = "m/44'/60'/0'/0/0";
+        let mnemonic_str = "test test test test test test test test test test test junk";
+        let mnemonic = Mnemonic::parse(mnemonic_str).expect("valid mnemonic");
+
+        let path: DerivationPath = "m/44'/60'/0'/0/0".parse().expect("valid derivation path");
+
         let mut rng = StdRng::seed_from_u64(1);
 
         let keypair = chain
-            .derive_from_mnemonic(mnemonic, path, &mut rng)
+            .derive_from_mnemonic(&mnemonic, &path, &mut rng)
             .expect("mnemonic derivation");
 
         if let KeyPair::Secp256k1 {
@@ -388,8 +384,8 @@ mod tests {
                 "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
             );
             assert!(public.len() == 65 && public[0] == 0x04);
-            assert_eq!(m.unwrap().to_string(), mnemonic);
-            assert_eq!(derivation_path.unwrap().to_string(), path);
+            assert_eq!(m.unwrap().to_string(), mnemonic_str);
+            assert_eq!(derivation_path.unwrap().to_string(), path.to_string());
 
             let address = chain.compute_address(&PublicKey::Secp256k1(public));
             assert_eq!(

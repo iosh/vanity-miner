@@ -1,5 +1,7 @@
 use std::sync::{mpsc, Arc};
 
+use bip32::DerivationPath;
+
 use super::chain::Chain;
 use super::matcher::Matcher;
 use super::types::FoundAddress;
@@ -44,7 +46,7 @@ pub enum GenerationMode {
     PrivateKey,
     Mnemonic {
         word_count: usize,
-        derivation_path: String,
+        derivation_path: DerivationPath,
     },
 }
 
@@ -80,8 +82,8 @@ mod tests {
         }
         fn derive_from_mnemonic(
             &self,
-            _mnemonic: &str,
-            _path: &str,
+            _mnemonic: &bip39::Mnemonic,
+            _path: &bip32::DerivationPath,
             _rng: &mut dyn rand::RngCore,
         ) -> Result<KeyPair> {
             Err(VanityError::CryptoError("unimplemented".into()))

@@ -66,9 +66,9 @@ mod tests {
 
         fn derive_from_mnemonic(
             &self,
-            mnemonic: &str,
-            path: &str,
-            rng: &mut dyn rand::RngCore,
+            _mnemonic: &bip39::Mnemonic,
+            _path: &bip32::DerivationPath,
+            _rng: &mut dyn rand::RngCore,
         ) -> Result<KeyPair> {
             Err(crate::core::types::VanityError::CryptoError(
                 "unimplemented".into(),

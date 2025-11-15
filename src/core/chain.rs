@@ -1,3 +1,5 @@
+use bip32::DerivationPath;
+use bip39::Mnemonic;
 use rand::RngCore;
 
 use super::config::AddressConfig;
@@ -11,8 +13,8 @@ pub trait Chain: Send + Sync {
 
     fn derive_from_mnemonic(
         &self,
-        mnemonic: &str,
-        path: &str,
+        mnemonic: &Mnemonic,
+        path: &DerivationPath,
         rng: &mut dyn RngCore,
     ) -> Result<KeyPair>;
 
