@@ -145,12 +145,7 @@ impl Chain for EthereumChain {
         Self::eip55_checksum(&addr) == normalized
     }
 
-    fn derive_from_mnemonic(
-        &self,
-        mnemonic: &Mnemonic,
-        path: &DerivationPath,
-        rng: &mut dyn RngCore,
-    ) -> Result<KeyPair> {
+    fn derive_from_mnemonic(&self, mnemonic: &Mnemonic, path: &DerivationPath) -> Result<KeyPair> {
         let seed = mnemonic.to_seed("");
 
         let xprv = XPrv::derive_from_path(seed, path)
@@ -365,10 +360,8 @@ mod tests {
 
         let path: DerivationPath = "m/44'/60'/0'/0/0".parse().expect("valid derivation path");
 
-        let mut rng = StdRng::seed_from_u64(1);
-
         let keypair = chain
-            .derive_from_mnemonic(&mnemonic, &path, &mut rng)
+            .derive_from_mnemonic(&mnemonic, &path)
             .expect("mnemonic derivation");
 
         if let KeyPair::Secp256k1 {

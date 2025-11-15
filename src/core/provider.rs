@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::chains::ConfluxChain;
 use crate::chains::EthereumChain;
 
 use super::chain::Chain;
@@ -19,6 +20,10 @@ impl ChainProvider {
         provider
             .register(Arc::new(EthereumChain::new()))
             .expect("register Ethereum chain");
+
+        provider
+            .register(Arc::new(ConfluxChain::new()))
+            .expect("register Conflux chain");
         provider
     }
 
@@ -68,7 +73,6 @@ mod tests {
             &self,
             _mnemonic: &bip39::Mnemonic,
             _path: &bip32::DerivationPath,
-            _rng: &mut dyn rand::RngCore,
         ) -> Result<KeyPair> {
             Err(crate::core::types::VanityError::CryptoError(
                 "unimplemented".into(),

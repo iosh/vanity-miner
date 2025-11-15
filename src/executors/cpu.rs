@@ -103,15 +103,16 @@ fn worker_loop(config: MiningConfig, stats: Arc<MiningStats>) {
         };
         let address: Address = config.chain.compute_address(&public);
 
-        let normalized = hex::encode(&address.raw);
+        // Format the address as the user will see it (hex for Ethereum, base32 for Conflux).
+        let formatted = config
+            .chain
+            .format_address(&address, &config.address_config);
+
+        let normalized = normalize_for_matching(&formatted, &config.address_config);
 
         local_attempts += 1;
 
         if config.matcher.matches(&normalized) {
-            let formatted = config
-                .chain
-                .format_address(&address, &config.address_config);
-
             let found = FoundAddress {
                 address: formatted,
                 secret: build_secret_info(&keypair),
@@ -145,7 +146,7 @@ fn generate_keypair_for_mode(
             let mnemonic = bip39::Mnemonic::generate(*word_count)
                 .map_err(|e| crate::core::types::VanityError::InvalidMnemonic(e.to_string()))?;
 
-            chain.derive_from_mnemonic(&mnemonic, derivation_path, rng)
+            chain.derive_from_mnemonic(&mnemonic, derivation_path)
         }
     }
 }
@@ -183,15 +184,25 @@ fn build_secret_info(keypair: &KeyPair) -> SecretInfo {
     }
 }
 
-fn normalize_address_for_matching(address: &str) -> String {
-    let stripped = address
-        .strip_prefix("0x")
-        .or_else(|| address.strip_prefix("0X"))
-        .unwrap_or(address);
+fn normalize_for_matching(addr: &str, cfg: &crate::core::config::AddressConfig) -> String {
+    let mut s = addr.to_owned();
+    s.make_ascii_lowercase();
 
-    let mut normalized = stripped.to_owned();
-    normalized.make_ascii_lowercase();
-    normalized
+    match &cfg.chain_config {
+        // Ethereum: strip "0x" prefix, match on raw hex string.
+        crate::core::config::ChainConfig::Ethereum { .. } => {
+            if let Some(stripped) = s.strip_prefix("0x") {
+                stripped.to_string()
+            } else {
+                s
+            }
+        }
+        // Conflux: strip "prefix:" part (e.g. "cfx:" / "cfxtest:"), match on body only.
+        crate::core::config::ChainConfig::Conflux { .. } => match s.split_once(':') {
+            Some((_prefix, body)) => body.to_string(),
+            None => s,
+        },
+    }
 }
 
 fn flush_local_counters(stats: &MiningStats, attempts: &mut u64, found: &mut u64) {
@@ -243,10 +254,9 @@ mod tests {
             &self,
             _mnemonic: &bip39::Mnemonic,
             _path: &bip32::DerivationPath,
-            rng: &mut dyn RngCore,
         ) -> Result<KeyPair> {
-            // For tests we just reuse generate_keypair.
-            self.generate_keypair(rng)
+            let mut rng = rand::rng();
+            self.generate_keypair(&mut rng)
         }
 
         fn keypair_from_secret(&self, _secret: &[u8]) -> Result<KeyPair> {

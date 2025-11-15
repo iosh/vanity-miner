@@ -16,6 +16,9 @@ pub struct Args {
     #[arg(long, default_value = "ethereum")]
     pub chain: String,
 
+    #[arg(long = "cfx-network", default_value_t = 1029)]
+    pub cfx_network: u32,
+
     /// Use randomly generated private keys to generate addresses.
     #[arg(long = "private-key", short = 'k')]
     pub private_key: bool,

@@ -71,10 +71,19 @@ pub fn build_runtime_config(args: &CliArgs) -> Result<RuntimeConfig> {
         }
     };
 
-    let address_config = AddressConfig::new(
-        Encoding::HexChecksum,
-        ChainConfig::Ethereum { checksum: true },
-    );
+    let address_config = match args.chain.as_str() {
+        "conflux" => AddressConfig::new(
+            Encoding::Base32,
+            ChainConfig::Conflux {
+                network_id: args.cfx_network,
+            },
+        ),
+        // Default to Ethereum-style hex checksum for other chains.
+        _ => AddressConfig::new(
+            Encoding::HexChecksum,
+            ChainConfig::Ethereum { checksum: true },
+        ),
+    };
 
     // 5. Limits and threads.
     let max_attempts = args.max_attempts.unwrap_or(0);
@@ -104,6 +113,7 @@ mod tests {
     fn runtime_config_basic_fields_are_resolved() {
         let args = Args {
             chain: "ethereum".to_string(),
+            cfx_network: 1029,
             private_key: true,
             mnemonic: false,
             max_attempts: Some(100),

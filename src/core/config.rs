@@ -84,7 +84,6 @@ mod tests {
             &self,
             _mnemonic: &bip39::Mnemonic,
             _path: &bip32::DerivationPath,
-            _rng: &mut dyn rand::RngCore,
         ) -> Result<KeyPair> {
             Err(VanityError::CryptoError("unimplemented".into()))
         }

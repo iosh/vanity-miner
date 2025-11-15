@@ -11,12 +11,7 @@ pub trait Chain: Send + Sync {
 
     fn generate_keypair(&self, rng: &mut dyn RngCore) -> Result<KeyPair>;
 
-    fn derive_from_mnemonic(
-        &self,
-        mnemonic: &Mnemonic,
-        path: &DerivationPath,
-        rng: &mut dyn RngCore,
-    ) -> Result<KeyPair>;
+    fn derive_from_mnemonic(&self, mnemonic: &Mnemonic, path: &DerivationPath) -> Result<KeyPair>;
 
     fn keypair_from_secret(&self, secret: &[u8]) -> Result<KeyPair>;
 
