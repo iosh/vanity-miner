@@ -102,14 +102,16 @@ fn worker_loop(config: MiningConfig, stats: Arc<MiningStats>) {
             }
         };
         let address: Address = config.chain.compute_address(&public);
-        let formatted = config
-            .chain
-            .format_address(&address, &config.address_config);
-        let normalized = normalize_address_for_matching(&formatted);
+
+        let normalized = hex::encode(&address.raw);
 
         local_attempts += 1;
 
         if config.matcher.matches(&normalized) {
+            let formatted = config
+                .chain
+                .format_address(&address, &config.address_config);
+
             let found = FoundAddress {
                 address: formatted,
                 secret: build_secret_info(&keypair),

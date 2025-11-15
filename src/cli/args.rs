@@ -1,20 +1,28 @@
 use clap::{ArgGroup, Parser};
 
-use crate::generator::AddressFormat;
-
 use super::validators::parse_mnemonic_word_count;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-#[command(group(
-    ArgGroup::new("use_method")
-    .required(true)
-    .args(&["use_mnemonic", "use_private_key"]),
-))]
+#[command(
+      group(
+          ArgGroup::new("key_source")
+              .required(true)
+              .args(&["mnemonic", "private_key"]),
+      )
+  )]
 pub struct Args {
-    /// Use a private key to generate the address.
-    #[arg(long, short = 'k')]
-    pub use_private_key: bool,
+    /// Target blockchain id. Default: ethereum
+    #[arg(long, default_value = "ethereum")]
+    pub chain: String,
+
+    /// Use randomly generated private keys to generate addresses.
+    #[arg(long = "private-key", short = 'k')]
+    pub private_key: bool,
+
+    /// Use randomly generated mnemonics to generate addresses.
+    #[arg(long = "mnemonic", short = 'm')]
+    pub mnemonic: bool,
 
     /// Max attempts to generate addresses (default: unlimited).
     #[arg(long, short = 'a')]
@@ -45,10 +53,6 @@ pub struct Args {
     #[arg(long, short = 'r')]
     pub regex: Option<String>,
 
-    /// Use a random mnemonic to generate the address.
-    #[arg(long, short = 'm')]
-    pub use_mnemonic: bool,
-
     /// Derivation path for mnemonic-based address generation.
     #[arg(long, short = 'd', default_value = "m/44'/60'/0'/0/0")]
     pub derivation_path: String,
@@ -57,15 +61,15 @@ pub struct Args {
     #[arg(long, short = 'w', value_parser = parse_mnemonic_word_count)]
     pub mnemonic_words: Option<usize>,
 
-    /// Address format: HEX (default) or BASE32.
-    #[arg(long, short = 'f', default_value = "HEX")]
-    pub address_format: AddressFormat,
-
-    /// Conflux network ID for address generation.
-    #[arg(long, short = 'n', default_value = "1029")]
-    pub cfx_network: u32,
-
     /// Output CSV file path for storing found addresses and keys.
-    #[arg(long, short = 'o', default_value = "vanity-addresses.csv")]
-    pub output_file: String,
+    #[arg(long = "output", short = 'o', default_value = "vanity-addresses.csv")]
+    pub output: String,
+
+    /// Also print each found address to the console.
+    #[arg(long)]
+    pub console: bool,
+
+    /// Do not write results to a CSV file.
+    #[arg(long = "no-file")]
+    pub no_file: bool,
 }
