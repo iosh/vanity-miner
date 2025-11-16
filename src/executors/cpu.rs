@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use rand::RngCore;
 use rayon::{prelude::*, ThreadPoolBuilder};
@@ -112,7 +112,7 @@ fn worker_loop(config: MiningConfig, stats: Arc<MiningStats>) {
 
         local_attempts += 1;
 
-        if config.matcher.matches(&normalized) {
+        if config.matcher.matches(normalized.as_ref()) {
             let found = FoundAddress {
                 address: formatted,
                 secret: build_secret_info(&keypair),
@@ -184,24 +184,47 @@ fn build_secret_info(keypair: &KeyPair) -> SecretInfo {
     }
 }
 
-fn normalize_for_matching(addr: &str, cfg: &crate::core::config::AddressConfig) -> String {
+fn normalize_for_matching<'a>(
+    addr: &'a str,
+    cfg: &crate::core::config::AddressConfig,
+) -> Cow<'a, str> {
     let mut s = addr.to_owned();
     s.make_ascii_lowercase();
 
     match &cfg.chain_config {
         // Ethereum: strip "0x" prefix, match on raw hex string.
-        crate::core::config::ChainConfig::Ethereum { .. } => {
-            if let Some(stripped) = s.strip_prefix("0x") {
-                stripped.to_string()
-            } else {
-                s
-            }
-        }
+        crate::core::config::ChainConfig::Ethereum { .. } => normalize_for_matching_eth(addr),
         // Conflux: strip "prefix:" part (e.g. "cfx:" / "cfxtest:"), match on body only.
-        crate::core::config::ChainConfig::Conflux { .. } => match s.split_once(':') {
-            Some((_prefix, body)) => body.to_string(),
-            None => s,
-        },
+        crate::core::config::ChainConfig::Conflux { .. } => normalize_for_matching_cfx(addr),
+    }
+}
+
+fn normalize_for_matching_eth<'a>(addr: &'a str) -> Cow<'a, str> {
+    let body = addr
+        .strip_prefix("0x")
+        .or_else(|| addr.strip_prefix("0X"))
+        .unwrap_or(addr);
+
+    if body
+        .chars()
+        .all(|c| !c.is_ascii_alphabetic() || c.is_ascii_lowercase())
+    {
+        Cow::Borrowed(body)
+    } else {
+        Cow::Owned(body.to_ascii_lowercase())
+    }
+}
+
+fn normalize_for_matching_cfx<'a>(addr: &'a str) -> Cow<'a, str> {
+    let body = addr.split_once(":").map(|(_, b)| b).unwrap_or(addr);
+
+    if body
+        .chars()
+        .all(|c| !c.is_ascii_alphabetic() || c.is_ascii_lowercase())
+    {
+        Cow::Borrowed(body)
+    } else {
+        Cow::Owned(body.to_ascii_lowercase())
     }
 }
 

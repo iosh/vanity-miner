@@ -63,7 +63,7 @@ mod tests {
             "dummy"
         }
 
-        fn generate_keypair(&self, rng: &mut dyn rand::RngCore) -> Result<KeyPair> {
+        fn generate_keypair(&self, _rng: &mut dyn rand::RngCore) -> Result<KeyPair> {
             Err(crate::core::types::VanityError::CryptoError(
                 "unimplemented".into(),
             ))
@@ -79,13 +79,13 @@ mod tests {
             ))
         }
 
-        fn keypair_from_secret(&self, secret: &[u8]) -> Result<KeyPair> {
+        fn keypair_from_secret(&self, _secret: &[u8]) -> Result<KeyPair> {
             Err(crate::core::types::VanityError::CryptoError(
                 "unimplemented".into(),
             ))
         }
 
-        fn compute_address(&self, public_key: &PublicKey) -> Address {
+        fn compute_address(&self, _public_key: &PublicKey) -> Address {
             Address {
                 raw: Vec::new(),
                 chain_id: self.id.to_string(),
@@ -94,17 +94,17 @@ mod tests {
 
         fn format_address(
             &self,
-            address: &Address,
-            config: &crate::core::config::AddressConfig,
+            _address: &Address,
+            _config: &crate::core::config::AddressConfig,
         ) -> String {
             String::new()
         }
 
-        fn format_secret(&self, keypair: &KeyPair) -> String {
+        fn format_secret(&self, _keypair: &KeyPair) -> String {
             String::new()
         }
 
-        fn validate_address(&self, address: &str) -> bool {
+        fn validate_address(&self, _address: &str) -> bool {
             true
         }
     }

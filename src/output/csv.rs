@@ -96,7 +96,6 @@ mod tests {
         };
 
         sink.handle(&found).unwrap();
-
         let content = std::fs::read_to_string(&path).expect("read csv file");
 
         assert!(content.contains("address,secret"));
